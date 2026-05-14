@@ -29,3 +29,15 @@ Or:
     (this only has to be done the first time).
 5. Run the db migrations (this prepares the database when the schema changes): `python manage.py migrate`
 6. Now start the backend with the following command: `python manage.py runserver 0.0.0.0:8000`
+
+### Frontend
+
+Prerequisites:
+- pnpm 11.1.2
+- Expo app on your phone
+
+Instructions to deploy:
+
+1. Run `make install` (the frontend dependencies were installed with the backend)
+2. Deploy the backend on another terminal and ensure that it's running.
+3. Run `make mobile` and follow the instructions in the terminal.

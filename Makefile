@@ -12,9 +12,13 @@ endif
 
 install:
 	cd apps/api && python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt
+	pnpm install
 
 migrate:
 	cd apps/api && .venv/bin/python manage.py migrate
+
+mobile:
+	cd apps/mobile && pnpm start
 
 format:
 	cd apps/api && ruff format .
@@ -28,4 +32,4 @@ clear-db:
 api:
 	cd apps/api && .venv/bin/python manage.py runserver 0.0.0.0:8000
 
-.PHONY: install migrate format db clear-db api
+.PHONY: install migrate mobile format db clear-db api
