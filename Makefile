@@ -14,14 +14,19 @@ install:
 	cd apps/api && python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt
 	pnpm install
 
+# API Commands
+
+api:
+	cd apps/api && .venv/bin/python manage.py runserver 0.0.0.0:8000
+
 migrate:
 	cd apps/api && .venv/bin/python manage.py migrate
 
-mobile:
-	cd apps/mobile && pnpm start
-
-format:
+api-format:
 	cd apps/api && ruff format .
+
+api-lint:
+	cd apps/api && ruff check .
 
 db:
 	$(COMPOSE) up -d
@@ -29,7 +34,15 @@ db:
 clear-db:
 	$(COMPOSE) down -v
 
-api:
-	cd apps/api && .venv/bin/python manage.py runserver 0.0.0.0:8000
+# Mobile Commands
 
-.PHONY: install migrate mobile format db clear-db api
+mobile:
+	cd apps/mobile && pnpm start
+
+mobile-format:
+	pnpm biome format apps/mobile/
+
+mobile-lint:
+	pnpm biome check apps/mobile/
+
+.PHONY: install api migrate api-lint api-format db clear-db mobile mobile-format mobile-lint
