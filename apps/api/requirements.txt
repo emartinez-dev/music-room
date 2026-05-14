@@ -1,0 +1,12 @@
+annotated-types==0.7.0
+asgiref==3.11.1
+Django==6.0.5
+django-ninja==1.6.2
+psycopg==3.3.4
+psycopg-binary==3.3.4
+pydantic==2.13.4
+pydantic_core==2.46.4
+ruff==0.15.13
+sqlparse==0.5.5
+typing-inspection==0.4.2
+typing_extensions==4.15.0

@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-music-room}
+      POSTGRES_USER: ${POSTGRES_USER:-music-room}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-music-room}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+volumes:
+  pgdata:
