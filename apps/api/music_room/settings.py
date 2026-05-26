@@ -28,10 +28,13 @@ DEBUG = bool(os.getenv("DJANGO_DEBUG"))
 
 ALLOWED_HOSTS = ["*"]
 
+# Daphne configuration
+ASGI_APPLICATION = "music_room.asgi.application"
 
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
