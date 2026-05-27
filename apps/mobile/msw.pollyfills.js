@@ -1,3 +1,5 @@
+// Reference: https://github.com/mswjs/mswjs.io/issues/453
+
 import "fast-text-encoding";
 import "react-native-url-polyfill/auto";
 
