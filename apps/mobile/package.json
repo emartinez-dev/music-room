@@ -15,7 +15,9 @@
     "react-native": "0.81.5"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "@types/react": "~19.1.0",
+    "msw": "^2.14.6",
     "typescript": "~5.9.2"
   },
   "private": true
