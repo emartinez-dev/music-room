@@ -82,6 +82,8 @@ Response 204
 
 ### Google OAuth
 
+[Docs](https://developers.google.com/identity/protocols/oauth2?hl=es-419)
+
 ```
 POST /auth/google
 Body: { id_token }   ← token from Google Sign-In on the mobile app
@@ -90,8 +92,10 @@ Response 200: { access, refresh }
 
 ### Link Spotify account
 
+[Docs](https://developer.spotify.com/documentation/web-api/concepts/authorization)
+
 ```
 POST /auth/spotify
-Body: { code, redirect_uri }   ← OAuth code from Spotify
+Body: { code, state }   ← OAuth code from Spotify
 Response 204
 ```
