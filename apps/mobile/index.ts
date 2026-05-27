@@ -3,6 +3,8 @@ import { registerRootComponent } from "expo";
 import App from "./App";
 
 if (__DEV__) {
+  require("./msw.pollyfills");
+
   const { server } = require("./src/mocks/server");
   server.listen({ onUnhandledRequest: "warn" });
 }
