@@ -1,4 +1,6 @@
 import axios from "axios";
+import { Platform } from "react-native";
+import DeviceInfo from "react-native-device-info";
 
 import { API_URL } from "../../config";
 import { getAccessToken, getRefreshToken, saveTokens } from "./auth";
@@ -9,6 +11,9 @@ export const Api = axios.create({
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
+    "X-Platform": Platform.OS,
+    "X-App-Version": Platform.Version,
+    "X-Device-Info": DeviceInfo.getModel(),
   },
 });
 
