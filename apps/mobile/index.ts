@@ -1,11 +1,10 @@
 import { registerRootComponent } from "expo";
-
-import Index from "./app/index";
+import Index from "@/app/(tabs)/index";
 
 if (__DEV__) {
   require("./msw.pollyfills");
 
-  const { server } = require("./mocks/server");
+  const { server } = require("@/mocks/server");
   server.listen({ onUnhandledRequest: "warn" });
 }
 
