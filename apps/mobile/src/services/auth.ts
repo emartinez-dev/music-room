@@ -1,19 +1,20 @@
-import { deleteItemAsync, getItemAsync, setItemAsync } from "expo-secure-store";
+import { getItem, setItem } from "expo-secure-store";
+import { Api } from "./api";
 
-export async function saveTokens(access: string, refresh: string) {
-  await setItemAsync("access-token", access);
-  await setItemAsync("refresh-token", refresh);
+export function saveTokens(access: string, refresh: string) {
+  setItem("access-token", access);
+  setItem("refresh-token", refresh);
 }
 
-export async function getAccessToken() {
-  return getItemAsync("access-token");
+export function getAccessToken() {
+  return getItem("access-token");
 }
 
-export async function getRefreshToken() {
-  return getItemAsync("refresh-token");
+export function getRefreshToken() {
+  return getItem("refresh-token");
 }
 
-export async function clearTokens() {
-  await deleteItemAsync("access-token")
-  await deleteItemAsync("refresh-token")
+export function clearTokens() {
+  setItem("access-token", "");
+  setItem("refresh-token", "");
 }

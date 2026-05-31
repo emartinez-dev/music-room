@@ -13,14 +13,14 @@ export const Api = axios.create({
     "Content-Type": "application/json",
     "X-Platform": Platform.OS,
     "X-App-Version": Platform.Version,
-    "X-Device-Info": DeviceInfo.getModel(),
+    "X-Device-Model": DeviceInfo.getModel(),
   },
 });
 
 // This interceptor will add the Authorization: Bearer header to every request
 Api.interceptors.request.use(
-  async (config) => {
-    const accessToken = await getAccessToken();
+  (config) => {
+    const accessToken = getAccessToken();
     if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
     return config;
   },
@@ -39,11 +39,11 @@ Api.interceptors.response.use(
       originalConfig._retry = true;
 
       try {
-        const refreshToken = await getRefreshToken();
+        const refreshToken = getRefreshToken();
         if (refreshToken) {
           const response = await Api.post("/auth/refresh", { refreshToken });
           const { accessToken } = response.data;
-          await saveTokens(accessToken, refreshToken);
+          saveTokens(accessToken, refreshToken);
 
           originalConfig.headers.Authorization = `Bearer ${accessToken}`;
           return axios(originalConfig);
