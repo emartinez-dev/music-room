@@ -8,6 +8,7 @@ import { getAccessToken, getRefreshToken, saveTokens } from './secureStore';
 export const Api = axios.create({
   baseURL: API_URL,
   timeout: 5_000,
+  adapter: "fetch",
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
