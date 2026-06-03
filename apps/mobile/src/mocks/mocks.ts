@@ -4,6 +4,7 @@ import { Api } from "../services/api";
 type MockResponse = { status: number; data: unknown };
 type MockHandler = (body: Record<string, string>) => MockResponse;
 
+// Each entry defines the method, path and handler for each of the mock routes
 const routes: Array<{ method: string; path: string; handler: MockHandler }> = [
   {
     method: "post",
@@ -60,6 +61,7 @@ const routes: Array<{ method: string; path: string; handler: MockHandler }> = [
   },
 ];
 
+
 function makeAxiosResponse(
   config: InternalAxiosRequestConfig,
   mock: MockResponse,
@@ -74,20 +76,24 @@ function makeAxiosResponse(
   };
 }
 
+// API call interceptor that tries to match every request with a Mock when it's registered
 export function setupMocks() {
   Api.interceptors.request.use(async (config) => {
     const method = (config.method ?? "get").toLowerCase();
     const url = config.url ?? "";
 
     const route = routes.find((r) => r.method === method && url.endsWith(r.path));
+    // If no route matches, lets the request go
     if (!route) return config;
 
-    const body: Record<string, string> =
-      typeof config.data === "string" ? JSON.parse(config.data) : (config.data ?? {});
-
+    // Parse request body to JSON if it's stringified
+    if (typeof config.data === "string") {
+      config.data = JSON.parse(config.data) 
+    }
+    const body = config.data ?? {}
     const mock = route.handler(body);
 
-    // Throw a "settled" response so axios response interceptors still run
+    // Create an axios response so interceptors still run
     const response = makeAxiosResponse(config, mock);
     if (mock.status >= 400) {
       const error = Object.assign(new Error(`Mock error ${mock.status}`), { response, config });
