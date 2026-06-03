@@ -1,9 +1,9 @@
-import axios from "axios";
-import { Platform } from "react-native";
-import DeviceInfo from "react-native-device-info";
+import axios from 'axios';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
 
-import { API_URL } from "../../config";
-import { getAccessToken, getRefreshToken, saveTokens } from "./secureStore";
+import { API_URL } from '../../config';
+import { getAccessToken, getRefreshToken, saveTokens } from './secureStore';
 
 export const Api = axios.create({
   baseURL: API_URL,
@@ -13,7 +13,7 @@ export const Api = axios.create({
     "Content-Type": "application/json",
     "X-Platform": Platform.OS,
     "X-App-Version": Platform.Version,
-    "X-Device-Model": DeviceInfo.getModel(),
+    "X-Device-Model": Device.modelName,
   },
 });
 

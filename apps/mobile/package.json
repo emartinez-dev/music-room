@@ -1,7 +1,7 @@
 {
   "name": "music-room",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.tsx",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -12,6 +12,7 @@
     "axios": "^1.16.1",
     "expo": "~54.0.35",
     "expo-constants": "~18.0.13",
+    "expo-device": "~8.0.10",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
