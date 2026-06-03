@@ -1,4 +1,6 @@
-import { Stack } from "expo-router";
+import { setupMocks } from '@/mocks/mocks';
+
+if (__DEV__) setupMocks();
 
 export default function RootLayout() {
   return (
