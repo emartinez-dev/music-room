@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import DeviceInfo from "react-native-device-info";
 
 import { API_URL } from "../../config";
-import { getAccessToken, getRefreshToken, saveTokens } from "./auth";
+import { getAccessToken, getRefreshToken, saveTokens } from "./secureStore";
 
 export const Api = axios.create({
   baseURL: API_URL,
