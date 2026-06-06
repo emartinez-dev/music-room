@@ -1,15 +1,21 @@
-import { Slot, Stack } from 'expo-router';
+import { Slot, Stack } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { PaperProvider } from "react-native-paper";
 
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { setupMocks } from '@/mocks/mocks';
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { setupMocks } from "@/mocks/mocks";
+
+import "../../global.css";
 
 if (__DEV__) setupMocks();
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <PaperProvider>
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </PaperProvider>
   );
 }
 
