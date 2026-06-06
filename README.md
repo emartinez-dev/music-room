@@ -39,5 +39,6 @@ Prerequisites:
 Instructions to deploy:
 
 1. Run `make install` (the frontend dependencies were installed with the backend)
-2. Deploy the backend on another terminal and ensure that it's running.
-3. Run `make mobile` and follow the instructions in the terminal.
+3. Deploy the backend on another terminal and ensure that it's running.
+2. Run `make mobile-build` (the app development build will be built)
+4. Run `make mobile` and follow the instructions in the terminal.

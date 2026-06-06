@@ -37,7 +37,10 @@ clear-db:
 # Mobile Commands
 
 mobile:
-	cd apps/mobile && pnpm start
+	cd apps/mobile && npx expo start
+
+mobile-build:
+	cd apps/mobile && npx expo prebuild --platform android && npx expo run:android
 
 mobile-format:
 	pnpm biome format apps/mobile/
