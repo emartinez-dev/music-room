@@ -1,20 +1,22 @@
-import { Slot, Stack } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import "../../global.css";
+
+import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { SnackbarProvider } from "@/context/SnackbarContext";
 import { setupMocks } from "@/mocks/mocks";
-
-import "../../global.css";
 
 if (__DEV__) setupMocks();
 
 export default function RootLayout() {
   return (
     <PaperProvider>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      <SnackbarProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </SnackbarProvider>
     </PaperProvider>
   );
 }
@@ -22,7 +24,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) return <Slot />;
+  if (isLoading) return null;
   return (
     <Stack>
       <Stack.Protected guard={isAuthenticated}>

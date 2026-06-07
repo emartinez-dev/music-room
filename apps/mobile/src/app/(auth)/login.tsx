@@ -1,17 +1,18 @@
-import { useState } from "react";
-import { View } from "react-native";
-import { Button, Divider, Text, TextInput } from "react-native-paper";
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Text, View } from 'react-native';
+import { Button, Divider, TextInput } from 'react-native-paper';
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View className="flex m-8 gap-4">
+    <View className="flex m-4 gap-2">
       <TextInput
         label="Email"
         value={email}
@@ -37,7 +38,13 @@ export default function LoginScreen() {
           />
         }
       />
-      <Button mode="text" compact onPress={() => {}}>
+      <Button
+        mode="text"
+        compact
+        onPress={() => {
+          router.push("/(auth)/reset");
+        }}
+      >
         Forgot your password?
       </Button>
       <Button
@@ -45,6 +52,7 @@ export default function LoginScreen() {
         onPress={() => {
           login(email, password);
         }}
+        disabled={isLoading}
       >
         Log in
       </Button>
@@ -54,7 +62,7 @@ export default function LoginScreen() {
       </Button>
       <View className="flex flex-row justify-center items-center">
         <Text>New here?</Text>
-        <Button compact mode="text">
+        <Button compact mode="text" onPress={() => router.push("/(auth)/register")}>
           Create an account
         </Button>
       </View>
