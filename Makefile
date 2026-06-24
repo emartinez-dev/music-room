@@ -1,8 +1,10 @@
 -include .env
 export
 
-# Detect whether docker or podman is installed
+# Detect whether docker or podman is installed (works on Unix and Windows)
 ifneq (,$(shell command -v docker 2>/dev/null))
+    COMPOSE := docker compose
+else ifneq (,$(shell where.exe docker 2>NUL))
     COMPOSE := docker compose
 else ifneq (,$(shell command -v podman 2>/dev/null))
     COMPOSE := podman compose
@@ -10,17 +12,28 @@ else
     $(error Couldn't find docker nor podman installed on your system.)
 endif
 
+# Cross-platform python/venv paths
+ifeq ($(OS),Windows_NT)
+    SYSTEM_PY := python
+    VENV_PY := .venv\Scripts\python.exe
+    VENV_PIP := .venv\Scripts\pip.exe
+else
+    SYSTEM_PY := python3.14
+    VENV_PY := .venv/bin/python
+    VENV_PIP := .venv/bin/pip
+endif
+
 install:
-	cd apps/api && python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt
+	cd apps/api && $(SYSTEM_PY) -m venv .venv && $(VENV_PIP) install -r requirements.txt
 	pnpm install
 
 # API Commands
 
 api:
-	cd apps/api && .venv/bin/python manage.py runserver 0.0.0.0:8000
+	cd apps/api && $(VENV_PY) manage.py runserver 0.0.0.0:8000
 
 migrate:
-	cd apps/api && .venv/bin/python manage.py migrate
+	cd apps/api && $(VENV_PY) manage.py migrate
 
 api-format:
 	cd apps/api && ruff format .
