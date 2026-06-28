@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SnackbarProvider } from "@/context/SnackbarContext";
 import { setupMocks } from "@/mocks/mocks";
 
-if (__DEV__) setupMocks();
+//if (__DEV__) setupMocks();
 
 export default function RootLayout() {
   return (
