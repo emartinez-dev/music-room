@@ -30,6 +30,12 @@ def register(request, data: RegisterSchema):
 
     if User.objects.filter(email=data.email).exists():
         return 409, {"code": "conflict", "message": "Email already exists"}
+
+    # 🔥 LOG para ver qué llega
+    print(f"📝 Email: {data.email}")
+    print(f"🔑 Password length: {len(data.password)}")
+    print(f"🔑 Password chars: {[ord(c) for c in data.password]}")
+
     
     # create user
     try:

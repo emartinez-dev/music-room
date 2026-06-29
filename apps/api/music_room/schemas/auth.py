@@ -7,6 +7,7 @@ class ErrorSchema(Schema):
 # --- /auth/register/ ---
 
 class RegisterSchema(Schema):
+    username: str
     email: str
     password: str
 
