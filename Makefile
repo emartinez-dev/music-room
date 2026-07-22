@@ -1,6 +1,9 @@
 -include .env
 export
 
+# Env
+MOCKS ?= 0
+
 # Detect whether docker or podman is installed (works on Unix and Windows)
 ifneq (,$(shell command -v docker 2>/dev/null))
     COMPOSE := docker compose
@@ -36,10 +39,10 @@ migrate:
 	cd apps/api && $(VENV_PY) manage.py migrate
 
 api-format:
-	cd apps/api && ruff format .
+	cd apps/api && $(VENV_PY) -m ruff format .
 
 api-lint:
-	cd apps/api && ruff check .
+	cd apps/api && $(VENV_PY) -m ruff check .
 
 db:
 	$(COMPOSE) up -d
@@ -50,7 +53,7 @@ clear-db:
 # Mobile Commands
 
 mobile:
-	cd apps/mobile && npx expo start
+	cd apps/mobile && EXPO_PUBLIC_USE_MOCKS=$(MOCKS) npx expo start
 
 mobile-build:
 	cd apps/mobile && npx expo prebuild --platform android && npx expo run:android

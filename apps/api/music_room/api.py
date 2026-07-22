@@ -1,4 +1,5 @@
 from ninja import NinjaAPI
+
 from .routers.auth import auth_router
 
 api = NinjaAPI()

@@ -1,15 +1,16 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Text, View } from 'react-native';
-import { Button, Divider, TextInput } from 'react-native-paper';
+import { router } from "expo-router";
+import { useState } from "react";
+import { Text, View } from "react-native";
+import { Button, Divider, TextInput } from "react-native-paper";
 
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterScreen() {
   const { register, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -23,6 +24,14 @@ export default function RegisterScreen() {
 
   return (
     <View className="flex m-4 gap-2">
+      <TextInput
+        label="Username"
+        value={username}
+        onChangeText={setUsername}
+        mode="outlined"
+        autoCapitalize="none"
+        left={<TextInput.Icon icon="account" />}
+      />
       <TextInput
         label="Email"
         value={email}
@@ -63,11 +72,7 @@ export default function RegisterScreen() {
           />
         }
       />
-      <Button
-        mode="contained"
-        onPress={handleRegister}
-        disabled={isLoading}
-      >
+      <Button mode="contained" onPress={handleRegister} disabled={isLoading}>
         Create account
       </Button>
       <Divider bold />

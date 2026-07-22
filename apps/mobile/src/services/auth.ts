@@ -9,7 +9,11 @@ export const loginApi = async (email: string, password: string): Promise<LoginRe
   return data;
 };
 
-export async function registerApi(username: string, email: string, password: string) {
+export async function registerApi(
+  username: string,
+  email: string,
+  password: string,
+): Promise<RegisterResponse> {
   const { data } = await Api.post("/auth/register", { username, email, password });
   return data;
 }

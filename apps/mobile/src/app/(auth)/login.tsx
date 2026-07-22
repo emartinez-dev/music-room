@@ -1,9 +1,9 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Text, View } from 'react-native';
-import { Button, Divider, TextInput } from 'react-native-paper';
+import { router } from "expo-router";
+import { useState } from "react";
+import { Text, View } from "react-native";
+import { Button, Divider, TextInput } from "react-native-paper";
 
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginScreen() {
   const { login, isLoading } = useAuth();
