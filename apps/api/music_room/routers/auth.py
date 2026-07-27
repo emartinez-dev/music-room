@@ -1,6 +1,3 @@
-# Django database models
-from django.contrib.auth.models import User
-from django.db import IntegrityError
 
 # Router, Schemas
 from ninja import Router
@@ -22,18 +19,11 @@ auth_router = Router()
 @auth_router.post("/register", response={201: RegisterResponse, 409: ErrorSchema})
 def register(request, data: RegisterSchema):
 
-    if User.objects.filter(email=data.email).exists():
-        return 409, {"code": "conflict", "message": "Email already exists"}
-
-    # create user
-    try:
-        user = create_user(
-            username=data.username,
-            email=data.email,
-            password=data.password,
-        )
-    except IntegrityError:
-        return 409, {"code": "conflict", "message": "Email already exists"}
+    user = create_user(
+        username=data.username,
+        email=data.email,
+        password=data.password,
+    )
 
     return 201, {"id": str(user.id), "email": user.email}
 
