@@ -7,6 +7,8 @@ from ..utils.jwt import create_access_token, create_refresh_token
 
 
 def create_user(username: str, email: str, password: str):
+    if User.objects.filter(email=email).exists():
+        raise InvalidEmailError()
     try:
         return User.objects.create_user(
             username=username,

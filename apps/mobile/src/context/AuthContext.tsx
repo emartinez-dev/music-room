@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { loginApi, logoutApi, registerApi } from "@/services/auth";
@@ -43,8 +44,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (username: string, email: string, password: string) => {
-    const { email: registeredEmail, id } = await registerApi(username, email, password);
-    await login(registeredEmail, password);
+    setIsLoading(true);
+
+    try {
+      const { email: registeredEmail } = await registerApi(username, email, password);
+
+      await login(registeredEmail, password);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Register failed");
+      } else {
+        showSnackbar("Register failed");
+      }
+    }
+
+    setIsLoading(false);
   };
 
   const logout = async () => {

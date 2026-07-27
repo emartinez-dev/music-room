@@ -1,4 +1,3 @@
-
 # Router, Schemas
 from ninja import Router
 

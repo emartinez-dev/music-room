@@ -39,3 +39,6 @@ typing_extensions==4.15.0
 ujson==5.12.1
 zope.interface==8.5
 PyJWT==2.10.1
+pytest==9.1.1
+pytest-cov==7.1.0
+pytest-django==4.12.0

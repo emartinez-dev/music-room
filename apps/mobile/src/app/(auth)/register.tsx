@@ -19,7 +19,7 @@ export default function RegisterScreen() {
       // TODO: Mostrar error con Snackbar
       return;
     }
-    register(email, email, password); // username is email
+    register(username, email, password);
   };
 
   return (
