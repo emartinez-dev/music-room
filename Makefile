@@ -44,6 +44,9 @@ api-format:
 api-lint:
 	cd apps/api && $(VENV_PY) -m ruff check .
 
+api-test:
+	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov-report=term-missing
+
 db:
 	$(COMPOSE) up -d
 
@@ -64,4 +67,11 @@ mobile-format:
 mobile-lint:
 	pnpm biome check apps/mobile/
 
-.PHONY: install api migrate api-lint api-format db clear-db mobile mobile-format mobile-lint
+# Code fix
+
+fix:
+	$(MAKE) api-format
+	cd apps/api && $(VENV_PY) -m ruff check --fix .
+	$(MAKE) mobile-format
+
+.PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-format mobile-lint fix
