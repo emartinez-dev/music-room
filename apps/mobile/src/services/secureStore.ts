@@ -1,4 +1,4 @@
-import { deleteItemAsync, getItem, setItem } from 'expo-secure-store';
+import { deleteItemAsync, getItem, setItem } from "expo-secure-store";
 
 export function saveTokens(access: string, refresh: string) {
   setItem("access-token", access);

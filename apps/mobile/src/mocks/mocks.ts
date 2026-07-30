@@ -61,11 +61,7 @@ const routes: Array<{ method: string; path: string; handler: MockHandler }> = [
   },
 ];
 
-
-function makeAxiosResponse(
-  config: InternalAxiosRequestConfig,
-  mock: MockResponse,
-): AxiosResponse {
+function makeAxiosResponse(config: InternalAxiosRequestConfig, mock: MockResponse): AxiosResponse {
   return {
     data: mock.data,
     status: mock.status,
@@ -88,9 +84,9 @@ export function setupMocks() {
 
     // Parse request body to JSON if it's stringified
     if (typeof config.data === "string") {
-      config.data = JSON.parse(config.data) 
+      config.data = JSON.parse(config.data);
     }
-    const body = config.data ?? {}
+    const body = config.data ?? {};
     const mock = route.handler(body);
 
     // Create an axios response so interceptors still run

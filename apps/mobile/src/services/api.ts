@@ -1,9 +1,9 @@
-import axios from 'axios';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import axios from "axios";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
 
-import { API_URL } from '../../config';
-import { getAccessToken, getRefreshToken, saveTokens } from './secureStore';
+import { API_URL } from "../../config";
+import { getAccessToken, getRefreshToken, saveTokens } from "./secureStore";
 
 export const Api = axios.create({
   baseURL: API_URL,

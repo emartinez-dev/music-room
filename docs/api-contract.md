@@ -52,7 +52,7 @@ Common error codes:
 
 ```
 POST /auth/register
-Body: { email, password }
+Body: { username, email, password }
 Response 201: { id, email }
 ```
 
