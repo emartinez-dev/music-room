@@ -9,7 +9,7 @@ channels==4.3.2
 constantly==23.10.4
 cryptography==48.0.0
 daphne==4.2.1
-Django==6.0.5
+Django==6.0.6
 django-ninja==1.6.2
 django-stubs==6.0.5
 django-stubs-ext==6.0.5
