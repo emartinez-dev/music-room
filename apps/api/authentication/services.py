@@ -2,8 +2,8 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 
-from ..exceptions import InvalidEmailError
-from ..utils.jwt import create_access_token, create_refresh_token
+from authentication.exceptions import InvalidEmailError
+from authentication.utils import create_access_token, create_refresh_token
 
 
 def create_user(username: str, email: str, password: str):

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from music_room.schemas.auth import (
+from authentication.schemas import (
     ErrorSchema,
     LoginResponse,
     LoginSchema,

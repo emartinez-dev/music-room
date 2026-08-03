@@ -3,7 +3,7 @@ import datetime
 import jwt
 from django.conf import settings
 
-from music_room.utils.jwt import (
+from authentication.utils import (
     create_access_token,
     create_refresh_token,
 )

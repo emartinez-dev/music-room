@@ -1,8 +1,8 @@
 import pytest
 from django.contrib.auth.models import User
 
-from music_room.exceptions import InvalidEmailError
-from music_room.services.auth import create_user, login_user
+from authentication.exceptions import InvalidEmailError
+from authentication.services import create_user, login_user
 
 pytestmark = pytest.mark.django_db
 

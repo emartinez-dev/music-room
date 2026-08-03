@@ -1,7 +1,7 @@
 # Router, Schemas
 from ninja import Router
 
-from ..schemas.auth import (
+from authentication.schemas import (
     ErrorSchema,
     LoginResponse,
     LoginSchema,
@@ -9,7 +9,7 @@ from ..schemas.auth import (
     RegisterResponse,
     RegisterSchema,
 )
-from ..services.auth import create_user, login_user
+from authentication.services import create_user, login_user
 
 auth_router = Router()
 

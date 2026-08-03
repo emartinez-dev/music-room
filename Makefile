@@ -45,7 +45,7 @@ api-lint:
 	cd apps/api && $(VENV_PY) -m ruff check .
 
 api-test:
-	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov-report=term-missing
+	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov=authentication --cov-report=term-missing
 
 db:
 	$(COMPOSE) up -d

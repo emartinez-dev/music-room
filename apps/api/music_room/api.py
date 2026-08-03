@@ -1,6 +1,7 @@
 from ninja import NinjaAPI
 
-from .exceptions import InvalidEmailError
+from authentication.exceptions import InvalidEmailError
+
 from .routers.auth import auth_router
 
 api = NinjaAPI()
