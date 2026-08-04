@@ -38,3 +38,14 @@ class LoginResponse(Schema):
 
 class LogoutSchema(Schema):
     refresh: str
+
+
+# --- /auth/refresh/ ---
+
+
+class RefreshSchema(Schema):
+    refresh: str
+
+
+class RefreshResponse(Schema):
+    access: str

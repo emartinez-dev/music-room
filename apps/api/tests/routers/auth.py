@@ -1,6 +1,11 @@
+import datetime
+
 import pytest
 from django.contrib.auth.models import User
 from django.test import Client
+
+from authentication.models import BlacklistedRefreshToken
+from authentication.utils import create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
 
@@ -121,12 +126,66 @@ def test_login_invalid_password(client):
 
 
 def test_logout(client):
+    refresh_token = create_refresh_token(1)
+
     response = client.post(
         "/api/auth/logout",
         data={
-            "refresh": "dummy-token",
+            "refresh": refresh_token,
         },
         content_type="application/json",
     )
 
     assert response.status_code == 204
+
+    assert BlacklistedRefreshToken.objects.count() == 1
+
+    blacklisted = BlacklistedRefreshToken.objects.first()
+
+    assert blacklisted is not None
+    assert blacklisted.refresh_token == refresh_token
+
+
+def test_refresh_success(client):
+    refresh_token = create_refresh_token(1)
+
+    response = client.post(
+        "/api/auth/refresh",
+        data={
+            "refresh": refresh_token,
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert "access" in body
+
+
+def test_refresh_blacklisted_token(client):
+    refresh_token = create_refresh_token(1)
+
+    BlacklistedRefreshToken.objects.create(
+        refresh_token=refresh_token,
+        expires_at=datetime.datetime.fromtimestamp(
+            decode_token(refresh_token)["exp"],
+            tz=datetime.UTC,
+        ),
+    )
+
+    response = client.post(
+        "/api/auth/refresh",
+        data={
+            "refresh": refresh_token,
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "code": "unauthorized",
+        "message": "Invalid refresh token",
+    }

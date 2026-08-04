@@ -2,7 +2,9 @@ import pytest
 from django.contrib.auth.models import User
 
 from authentication.exceptions import InvalidEmailError
-from authentication.services import create_user, login_user
+from authentication.models import BlacklistedRefreshToken
+from authentication.services import blacklist_refresh_token, create_user, login_user
+from authentication.utils import create_refresh_token
 
 pytestmark = pytest.mark.django_db
 
@@ -31,6 +33,21 @@ def test_create_user_existing_email_raises():
         create_user(
             username="another",
             email="marc@test.com",
+            password="password456",
+        )
+
+
+def test_create_user_existing_username_raises():
+    User.objects.create_user(
+        username="marc",
+        email="marc1@test.com",
+        password="password123",
+    )
+
+    with pytest.raises(InvalidEmailError):
+        create_user(
+            username="marc",
+            email="marc2@test.com",
             password="password456",
         )
 
@@ -79,3 +96,16 @@ def test_login_user_returns_tokens():
 
     assert isinstance(tokens["access"], str)
     assert isinstance(tokens["refresh"], str)
+
+
+def test_blacklist_refresh_token():
+    refresh_token = create_refresh_token(1)
+
+    blacklist_refresh_token(refresh_token)
+
+    assert BlacklistedRefreshToken.objects.count() == 1
+
+    blacklisted = BlacklistedRefreshToken.objects.first()
+
+    assert blacklisted is not None
+    assert blacklisted.refresh_token == refresh_token

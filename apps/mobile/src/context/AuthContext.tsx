@@ -1,8 +1,10 @@
 import { AxiosError } from "axios";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { loginApi, logoutApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
+import { setSessionExpiredHandler } from "@/services/sessionManager";
+
 import { useSnackbar } from "./SnackbarContext";
 
 type User = { id: string; email: string };
@@ -24,11 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { showSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    const access = getAccessToken();
-    if (access) setIsAuthenticated(true);
-  }, []);
-
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -38,10 +35,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       setIsAuthenticated(true);
     } catch (error) {
-      showSnackbar(String(error));
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Login failed");
+      } else {
+        showSnackbar("Login failed");
+      }
     }
     setIsLoading(false);
   };
+
+  const logout = useCallback(async () => {
+    try {
+      const refresh = getRefreshToken();
+
+      if (refresh) {
+        await logoutApi(refresh);
+      }
+    } finally {
+      clearTokens();
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  }, []);
 
   const register = async (username: string, email: string, password: string) => {
     setIsLoading(true);
@@ -61,13 +76,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
-  const logout = async () => {
-    const refresh = getRefreshToken();
-    if (refresh) await logoutApi(refresh);
-    clearTokens();
-    setUser(null);
-    setIsAuthenticated(false);
-  };
+  useEffect(() => {
+    const access = getAccessToken();
+
+    if (access) {
+      setIsAuthenticated(true);
+    }
+
+    setSessionExpiredHandler(() => {
+      void logout();
+    });
+  }, [logout]);
 
   return (
     <AuthContext.Provider

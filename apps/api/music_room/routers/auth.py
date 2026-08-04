@@ -1,15 +1,23 @@
 # Router, Schemas
 from ninja import Router
 
+from authentication.auth import JWTAuth
 from authentication.schemas import (
     ErrorSchema,
     LoginResponse,
     LoginSchema,
     LogoutSchema,
+    RefreshResponse,
+    RefreshSchema,
     RegisterResponse,
     RegisterSchema,
 )
-from authentication.services import create_user, login_user
+from authentication.services import (
+    blacklist_refresh_token,
+    create_user,
+    login_user,
+    refresh_access_token,
+)
 
 auth_router = Router()
 
@@ -51,5 +59,33 @@ def login(request, data: LoginSchema):
 @auth_router.post("/logout", response={204: None})
 def logout(request, data: LogoutSchema):
 
-    # TODO: Invalidate refresh tokens on logout before production deployment.
+    blacklist_refresh_token(data.refresh)
     return 204, None
+
+
+# /auth/refresh
+@auth_router.post(
+    "/refresh",
+    response={
+        200: RefreshResponse,
+        401: ErrorSchema,
+    },
+)
+def refresh(request, data: RefreshSchema):
+    access = refresh_access_token(data.refresh)
+
+    if not access:
+        return 401, {
+            "code": "unauthorized",
+            "message": "Invalid refresh token",
+        }
+
+    return access
+
+
+# /auth/me (temporary endpoint for authentication testing)
+@auth_router.get("/me", auth=JWTAuth())
+def me(request):
+    return {
+        "message": "Authenticated",
+    }
