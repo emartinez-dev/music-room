@@ -49,3 +49,8 @@ class RefreshSchema(Schema):
 
 class RefreshResponse(Schema):
     access: str
+
+# --- /auth/google/ ---
+
+class GoogleLoginSchema(Schema):
+    id_token: str

@@ -4,6 +4,7 @@ from ninja import Router
 from authentication.auth import JWTAuth
 from authentication.schemas import (
     ErrorSchema,
+    GoogleLoginSchema,
     LoginResponse,
     LoginSchema,
     LogoutSchema,
@@ -16,6 +17,7 @@ from authentication.services import (
     blacklist_refresh_token,
     create_user,
     login_user,
+    login_with_google,
     refresh_access_token,
 )
 
@@ -51,6 +53,25 @@ def login(request, data: LoginSchema):
 
     if not tokens:
         return 401, {"code": "unauthorized", "message": "Invalid credentials"}
+
+    return tokens
+
+# /auth/google
+@auth_router.post(
+    "/google",
+    response={
+        200: LoginResponse,
+        401: ErrorSchema,
+    },
+)
+def google_login(request, data: GoogleLoginSchema):
+    tokens = login_with_google(data.id_token)
+
+    if not tokens:
+        return 401, {
+            "code": "unauthorized",
+            "message": "Invalid Google credentials",
+        }
 
     return tokens
 

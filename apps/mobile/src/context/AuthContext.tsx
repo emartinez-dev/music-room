@@ -13,6 +13,10 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (tokens: {
+    access: string;
+    refresh: string;
+  }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -44,19 +48,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
+  const loginWithGoogle = async (tokens: {
+      access: string;
+      refresh: string;
+    }) => {
+    saveTokens(tokens.access, tokens.refresh);
+
+    setUser({
+      id: "google",
+      email: "",
+    });
+
+    setIsAuthenticated(true);
+  };
+
+
   const logout = useCallback(async () => {
     try {
-      const refresh = getRefreshToken();
+      const refresh = await getRefreshToken();
 
       if (refresh) {
         await logoutApi(refresh);
+      }
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error(
+          "Logout error:",
+          JSON.stringify(error.response?.data, null, 2)
+        );
+
+        showSnackbar(error.response?.data?.message ?? "Logout failed");
+      } else {
+        console.error("Logout error:", error);
+        showSnackbar("Logout failed");
       }
     } finally {
       clearTokens();
       setUser(null);
       setIsAuthenticated(false);
     }
-  }, []);
+  }, [showSnackbar]);
+
 
   const register = async (username: string, email: string, password: string) => {
     setIsLoading(true);
@@ -77,11 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const access = getAccessToken();
+    const checkAccessToken = async () => {
+      const access = await getAccessToken();
 
-    if (access) {
-      setIsAuthenticated(true);
-    }
+      if (access) {
+        setIsAuthenticated(true);
+      }
+    };
+
+    void checkAccessToken();
 
     setSessionExpiredHandler(() => {
       void logout();
@@ -95,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated,
         login,
+        loginWithGoogle,
         logout,
         register,
       }}

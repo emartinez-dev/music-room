@@ -9,6 +9,13 @@ export const loginApi = async (email: string, password: string): Promise<LoginRe
   return data;
 };
 
+export async function googleLoginApi(
+  idToken: string,
+): Promise<LoginResponse> {
+  const { data } = await Api.post("/auth/google", { id_token: idToken });
+  return data;
+}
+
 export async function registerApi(
   username: string,
   email: string,
