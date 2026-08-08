@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth.models import User
@@ -189,3 +190,71 @@ def test_refresh_blacklisted_token(client):
         "code": "unauthorized",
         "message": "Invalid refresh token",
     }
+
+@patch("music_room.routers.auth.login_with_google")
+def test_google_login_success(mock_login_with_google, client):
+    mock_login_with_google.return_value = {
+        "access": "access-token",
+        "refresh": "refresh-token",
+        "user": {
+            "id": "1",
+            "email": "marc@test.com",
+        },
+    }
+
+    response = client.post(
+        "/api/auth/google",
+        data={
+            "id_token": "valid-google-id-token",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "access": "access-token",
+        "refresh": "refresh-token",
+        "user": {
+            "id": "1",
+            "email": "marc@test.com",
+        },
+    }
+
+    mock_login_with_google.assert_called_once_with(
+        "valid-google-id-token",
+    )
+
+
+@patch("music_room.routers.auth.login_with_google")
+def test_google_login_invalid_credentials(mock_login_with_google, client):
+    mock_login_with_google.return_value = None
+
+    response = client.post(
+        "/api/auth/google",
+        data={
+            "id_token": "invalid-google-id-token",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "code": "unauthorized",
+        "message": "Invalid Google credentials",
+    }
+
+    mock_login_with_google.assert_called_once_with(
+        "invalid-google-id-token",
+    )
+
+
+def test_google_login_requires_id_token(client):
+    response = client.post(
+        "/api/auth/google",
+        data={},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422

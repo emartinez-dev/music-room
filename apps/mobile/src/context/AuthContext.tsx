@@ -16,6 +16,7 @@ type AuthContextType = {
   loginWithGoogle: (tokens: {
     access: string;
     refresh: string;
+    user: User;
   }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -48,19 +49,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
+  
+
   const loginWithGoogle = async (tokens: {
-      access: string;
-      refresh: string;
+    access: string;
+    refresh: string;
+    user: User;
     }) => {
-    saveTokens(tokens.access, tokens.refresh);
+    setIsLoading(true);
 
-    setUser({
-      id: "google",
-      email: "",
-    });
+    try {
+      saveTokens(tokens.access, tokens.refresh);
 
-    setIsAuthenticated(true);
-  };
+      setUser(tokens.user);
+      setIsAuthenticated(true);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Google login failed");
+      } else {
+        showSnackbar("Google login failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+};
 
 
   const logout = useCallback(async () => {

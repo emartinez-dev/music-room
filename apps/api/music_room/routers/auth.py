@@ -4,6 +4,7 @@ from ninja import Router
 from authentication.auth import JWTAuth
 from authentication.schemas import (
     ErrorSchema,
+    GoogleLoginResponse,
     GoogleLoginSchema,
     LoginResponse,
     LoginSchema,
@@ -60,7 +61,7 @@ def login(request, data: LoginSchema):
 @auth_router.post(
     "/google",
     response={
-        200: LoginResponse,
+        200: GoogleLoginResponse,
         401: ErrorSchema,
     },
 )

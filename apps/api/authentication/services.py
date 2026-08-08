@@ -99,4 +99,5 @@ def login_with_google(id_token_string: str):
     return {
         "access": create_access_token(user.id),
         "refresh": create_refresh_token(user.id),
+        "user": { "id": str(user.id), "email": user.email, }
     }
