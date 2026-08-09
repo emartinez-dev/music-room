@@ -41,11 +41,11 @@ describe("RegisterScreen", () => {
   it("should call register with the form values", async () => {
     await render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByLabelText("Username"), "username");
-    fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
-    fireEvent.changeText(screen.getByLabelText("Password"), "secret");
-    fireEvent.changeText(screen.getByLabelText("Confirm Password"), "secret");
-    fireEvent.press(screen.getByText("Create account"));
+    await fireEvent.changeText(screen.getByLabelText("Username"), "username");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.changeText(screen.getByLabelText("Confirm Password"), "secret");
+    await fireEvent.press(screen.getByText("Create account"));
 
     await waitFor(() => {
       expect(register).toHaveBeenCalledWith(
@@ -59,11 +59,11 @@ describe("RegisterScreen", () => {
   it("should not call register when passwords do not match", async () => {
     await render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByLabelText("Username"), "username");
-    fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
-    fireEvent.changeText(screen.getByLabelText("Password"), "secret");
-    fireEvent.changeText(screen.getByLabelText("Confirm Password"), "different");
-    fireEvent.press(screen.getByText("Create account"));
+    await fireEvent.changeText(screen.getByLabelText("Username"), "username");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.changeText(screen.getByLabelText("Confirm Password"), "different");
+    await fireEvent.press(screen.getByText("Create account"));
 
     expect(register).not.toHaveBeenCalled();
   });
@@ -71,7 +71,7 @@ describe("RegisterScreen", () => {
   it("should navigate to login screen", async () => {
     await render(<RegisterScreen />);
 
-    fireEvent.press(screen.getByText("Log in"));
+    await fireEvent.press(screen.getByText("Log in"));
 
     expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/login");
   });

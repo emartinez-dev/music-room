@@ -48,9 +48,9 @@ describe("LoginScreen", () => {
   it("should call login with email and password on submit", async () => {
     await render(<LoginScreen />);
 
-    fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
-    fireEvent.changeText(screen.getByLabelText("Password"), "secret");
-    fireEvent.press(screen.getByText("Log in"));
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.press(screen.getByText("Log in"));
 
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith("user@example.com", "secret");
@@ -60,7 +60,7 @@ describe("LoginScreen", () => {
   it("should navigate to reset password screen", async () => {
     await render(<LoginScreen />);
 
-    fireEvent.press(screen.getByText("Forgot your password?"));
+    await fireEvent.press(screen.getByText("Forgot your password?"));
 
     expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/reset");
   });
@@ -68,7 +68,7 @@ describe("LoginScreen", () => {
   it("should navigate to register screen", async () => {
     await render(<LoginScreen />);
 
-    fireEvent.press(screen.getByText("Create an account"));
+    await fireEvent.press(screen.getByText("Create an account"));
 
     expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/register");
   });
@@ -82,7 +82,7 @@ describe("LoginScreen", () => {
 
     await render(<LoginScreen />);
 
-    fireEvent.press(screen.getByText("Continue with Google"));
+    await fireEvent.press(screen.getByText("Continue with Google"));
 
     await waitFor(() => {
       expect(mockedHandleGoogleSignIn).toHaveBeenCalled();

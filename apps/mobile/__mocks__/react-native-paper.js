@@ -19,7 +19,6 @@
  */  
 
 // ── TextInput ──────────────────────────────────────────────────────────────  
-console.log("MOCK FILE LOADED: react-native-paper mock");
 function MockTextInput(props) {  
   var React = require("react");
   var RN = require("react-native");  
@@ -34,8 +33,7 @@ function MockTextInput(props) {
       rest[key] = props[key];  
     }  
   }  
-  console.log("MockTextInput render - label:", label, "rest:", Object.keys(rest));
-  return React.createElement(RN.TextInput, Object.assign({}, rest, {  
+  return React.createElement(RN.TextInput, Object.assign({}, rest, {
     accessibilityLabel: label || props.accessibilityLabel,  
     placeholder: label || props.placeholder,  
     style: [{ borderWidth: 0 }, props.style].filter(Boolean),  
