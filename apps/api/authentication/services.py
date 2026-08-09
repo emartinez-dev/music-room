@@ -71,6 +71,7 @@ def refresh_access_token(refresh_token: str):
         "access": create_access_token(payload["user_id"]),
     }
 
+
 def login_with_google(id_token_string: str):
     try:
         payload = id_token.verify_oauth2_token(
@@ -99,5 +100,8 @@ def login_with_google(id_token_string: str):
     return {
         "access": create_access_token(user.id),
         "refresh": create_refresh_token(user.id),
-        "user": { "id": str(user.id), "email": user.email, }
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+        },
     }

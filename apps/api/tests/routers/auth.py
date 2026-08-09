@@ -191,6 +191,7 @@ def test_refresh_blacklisted_token(client):
         "message": "Invalid refresh token",
     }
 
+
 @patch("music_room.routers.auth.login_with_google")
 def test_google_login_success(mock_login_with_google, client):
     mock_login_with_google.return_value = {

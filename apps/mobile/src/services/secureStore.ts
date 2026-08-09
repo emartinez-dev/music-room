@@ -1,14 +1,7 @@
-import {
-  deleteItemAsync,
-  getItemAsync,
-  setItemAsync,
-} from "expo-secure-store";
+import { deleteItemAsync, getItemAsync, setItemAsync } from "expo-secure-store";
 
 export async function saveTokens(access: string, refresh: string) {
-  await Promise.all([
-    setItemAsync("access-token", access),
-    setItemAsync("refresh-token", refresh),
-  ]);
+  await Promise.all([setItemAsync("access-token", access), setItemAsync("refresh-token", refresh)]);
 }
 
 export async function setAccessToken(access: string) {
@@ -28,8 +21,5 @@ export async function getRefreshToken() {
 }
 
 export async function clearTokens() {
-  await Promise.all([
-    deleteItemAsync("access-token"),
-    deleteItemAsync("refresh-token"),
-  ]);
+  await Promise.all([deleteItemAsync("access-token"), deleteItemAsync("refresh-token")]);
 }

@@ -57,6 +57,7 @@ def login(request, data: LoginSchema):
 
     return tokens
 
+
 # /auth/google
 @auth_router.post(
     "/google",

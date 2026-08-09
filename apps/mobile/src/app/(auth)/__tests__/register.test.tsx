@@ -48,11 +48,7 @@ describe("RegisterScreen", () => {
     await fireEvent.press(screen.getByText("Create account"));
 
     await waitFor(() => {
-      expect(register).toHaveBeenCalledWith(
-        "username",
-        "user@example.com",
-        "secret",
-      );
+      expect(register).toHaveBeenCalledWith("username", "user@example.com", "secret");
     });
   });
 

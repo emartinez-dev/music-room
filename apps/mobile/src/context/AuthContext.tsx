@@ -13,11 +13,7 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (tokens: {
-    access: string;
-    refresh: string;
-    user: User;
-  }) => Promise<void>;
+  loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -49,13 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
-  
-
-  const loginWithGoogle = async (tokens: {
-    access: string;
-    refresh: string;
-    user: User;
-    }) => {
+  const loginWithGoogle = async (tokens: { access: string; refresh: string; user: User }) => {
     setIsLoading(true);
 
     try {
@@ -72,8 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-};
-
+  };
 
   const logout = useCallback(async () => {
     try {
@@ -84,10 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       if (error instanceof AxiosError) {
-        console.error(
-          "Logout error:",
-          JSON.stringify(error.response?.data, null, 2)
-        );
+        console.error("Logout error:", JSON.stringify(error.response?.data, null, 2));
 
         showSnackbar(error.response?.data?.message ?? "Logout failed");
       } else {
@@ -100,7 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false);
     }
   }, [showSnackbar]);
-
 
   const register = async (username: string, email: string, password: string) => {
     setIsLoading(true);

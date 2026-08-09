@@ -117,7 +117,9 @@ def test_blacklist_refresh_token():
     assert blacklisted is not None
     assert blacklisted.refresh_token == refresh_token
 
+
 # Google OAuth2 login tests with @patch mocks
+
 
 @patch("authentication.services.id_token.verify_oauth2_token")
 def test_login_with_google_existing_user(mock_verify):

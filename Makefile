@@ -75,6 +75,6 @@ mobile-test:
 fix:
 	$(MAKE) api-format
 	cd apps/api && $(VENV_PY) -m ruff check --fix .
-	$(MAKE) mobile-format
+	pnpm biome format apps/mobile/ --write
 
 .PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-format mobile-lint mobile-test fix

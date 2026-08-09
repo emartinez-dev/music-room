@@ -10,9 +10,7 @@ export const loginApi = async (email: string, password: string): Promise<LoginRe
   return data;
 };
 
-export async function googleLoginApi(
-  idToken: string,
-): Promise<GoogleLoginResponse> {
+export async function googleLoginApi(idToken: string): Promise<GoogleLoginResponse> {
   const { data } = await Api.post("/auth/google", { id_token: idToken });
   return data;
 }

@@ -1,11 +1,5 @@
 import { Api } from "../api";
-import {
-  googleLoginApi,
-  loginApi,
-  logoutApi,
-  refreshApi,
-  registerApi,
-} from "../auth";
+import { googleLoginApi, loginApi, logoutApi, refreshApi, registerApi } from "../auth";
 
 jest.mock("../api", () => ({
   Api: {
@@ -37,9 +31,7 @@ describe("auth service", () => {
     it("should propagate API errors", async () => {
       mockedPost.mockRejectedValue(new Error("network error"));
 
-      await expect(loginApi("user@example.com", "secret")).rejects.toThrow(
-        "network error",
-      );
+      await expect(loginApi("user@example.com", "secret")).rejects.toThrow("network error");
     });
   });
 
@@ -62,11 +54,7 @@ describe("auth service", () => {
       const response = { data: { id: "abc-123", email: "user@example.com" } };
       mockedPost.mockResolvedValue(response);
 
-      const result = await registerApi(
-        "username",
-        "user@example.com",
-        "secret",
-      );
+      const result = await registerApi("username", "user@example.com", "secret");
 
       expect(mockedPost).toHaveBeenCalledWith("/auth/register", {
         username: "username",

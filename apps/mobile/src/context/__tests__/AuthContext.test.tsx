@@ -3,12 +3,7 @@ import type { ReactNode } from "react";
 
 import { AuthProvider, useAuth } from "../AuthContext";
 import { loginApi, logoutApi, registerApi } from "@/services/auth";
-import {
-  clearTokens,
-  getAccessToken,
-  getRefreshToken,
-  saveTokens,
-} from "@/services/secureStore";
+import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
 
 jest.mock("@/services/auth", () => ({
@@ -41,9 +36,7 @@ const mockedGetAccessToken = getAccessToken as jest.Mock;
 const mockedGetRefreshToken = getRefreshToken as jest.Mock;
 const mockedSetSessionExpiredHandler = setSessionExpiredHandler as jest.Mock;
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <AuthProvider>{children}</AuthProvider>
-);
+const wrapper = ({ children }: { children: ReactNode }) => <AuthProvider>{children}</AuthProvider>;
 
 describe("AuthContext", () => {
   beforeEach(() => {
@@ -64,9 +57,7 @@ describe("AuthContext", () => {
     it("should register the session expired handler on mount", async () => {
       await renderHook(() => useAuth(), { wrapper });
 
-      expect(mockedSetSessionExpiredHandler).toHaveBeenCalledWith(
-        expect.any(Function),
-      );
+      expect(mockedSetSessionExpiredHandler).toHaveBeenCalledWith(expect.any(Function));
     });
 
     it("should set isAuthenticated to true if an access token exists", async () => {
@@ -93,14 +84,8 @@ describe("AuthContext", () => {
         await result.current.login("user@example.com", "secret");
       });
 
-      expect(mockedLoginApi).toHaveBeenCalledWith(
-        "user@example.com",
-        "secret",
-      );
-      expect(mockedSaveTokens).toHaveBeenCalledWith(
-        "access-token",
-        "refresh-token",
-      );
+      expect(mockedLoginApi).toHaveBeenCalledWith("user@example.com", "secret");
+      expect(mockedSaveTokens).toHaveBeenCalledWith("access-token", "refresh-token");
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.user).toEqual({
         id: "123",
@@ -136,10 +121,7 @@ describe("AuthContext", () => {
         });
       });
 
-      expect(mockedSaveTokens).toHaveBeenCalledWith(
-        "google-access",
-        "google-refresh",
-      );
+      expect(mockedSaveTokens).toHaveBeenCalledWith("google-access", "google-refresh");
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.user).toEqual({
         id: "google-1",
@@ -162,22 +144,11 @@ describe("AuthContext", () => {
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.register(
-          "username",
-          "user@example.com",
-          "secret",
-        );
+        await result.current.register("username", "user@example.com", "secret");
       });
 
-      expect(mockedRegisterApi).toHaveBeenCalledWith(
-        "username",
-        "user@example.com",
-        "secret",
-      );
-      expect(mockedLoginApi).toHaveBeenCalledWith(
-        "user@example.com",
-        "secret",
-      );
+      expect(mockedRegisterApi).toHaveBeenCalledWith("username", "user@example.com", "secret");
+      expect(mockedLoginApi).toHaveBeenCalledWith("user@example.com", "secret");
       expect(result.current.isAuthenticated).toBe(true);
     });
 
@@ -187,11 +158,7 @@ describe("AuthContext", () => {
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.register(
-          "username",
-          "user@example.com",
-          "secret",
-        );
+        await result.current.register("username", "user@example.com", "secret");
       });
 
       expect(result.current.isAuthenticated).toBe(false);

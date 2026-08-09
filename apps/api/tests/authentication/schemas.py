@@ -81,6 +81,7 @@ def test_error_schema():
     assert error.code == "conflict"
     assert error.message == "Email already exists"
 
+
 def test_google_login_schema():
     schema = GoogleLoginSchema(
         id_token="google-id-token",
@@ -118,4 +119,3 @@ def test_google_login_response():
     assert response.refresh == "refresh-token"
     assert response.user.id == "1"
     assert response.user.email == "marc@test.com"
-
