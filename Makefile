@@ -67,6 +67,9 @@ mobile-format:
 mobile-lint:
 	pnpm biome check apps/mobile/
 
+mobile-test:
+	cd apps/mobile && npm test
+
 # Code fix
 
 fix:
@@ -74,4 +77,4 @@ fix:
 	cd apps/api && $(VENV_PY) -m ruff check --fix .
 	$(MAKE) mobile-format
 
-.PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-format mobile-lint fix
+.PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-format mobile-lint mobile-test fix
