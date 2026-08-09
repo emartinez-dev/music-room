@@ -1,5 +1,11 @@
 {
   "name": "music-room",
   "private": true,
-  "packageManager": "pnpm@11.5.0"
+  "packageManager": "pnpm@11.5.0",
+  "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-expo": "^57.0.3"
+  }
 }
