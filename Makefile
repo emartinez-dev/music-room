@@ -7,7 +7,7 @@ MOCKS ?= 0
 # Detect whether docker or podman is installed (works on Unix and Windows)
 ifneq (,$(shell command -v docker 2>/dev/null))
     COMPOSE := docker compose
-else ifneq (,$(shell where.exe docker 2>NUL))
+else ifneq (,$(shell where.exe docker 2>/dev/null))
     COMPOSE := docker compose
 else ifneq (,$(shell command -v podman 2>/dev/null))
     COMPOSE := podman compose
@@ -60,6 +60,9 @@ mobile:
 
 mobile-build:
 	cd apps/mobile && npx expo prebuild --platform android && npx expo run:android
+
+mobile-clean:
+	cd apps/mobile && npx expo prebuild --clean
 
 mobile-format:
 	pnpm biome format apps/mobile/
