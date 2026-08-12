@@ -34,8 +34,8 @@ const RefreshApi = axios.create({
 
 // This interceptor will add the Authorization: Bearer header to every request
 Api.interceptors.request.use(
-  (config) => {
-    const accessToken = getAccessToken();
+  async (config) => {
+    const accessToken = await getAccessToken();
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -62,7 +62,7 @@ Api.interceptors.response.use(
       originalConfig._retry = true;
 
       try {
-        const refreshToken = getRefreshToken();
+        const refreshToken = await getRefreshToken();
 
         if (!refreshToken) {
           return Promise.reject(error);
