@@ -1,6 +1,6 @@
 import datetime
-import jwt
 
+import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -8,7 +8,7 @@ from django.db import IntegrityError
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
-from authentication.exceptions import InvalidEmailError
+from authentication.exceptions import UserConflictError
 from authentication.models import BlacklistedRefreshToken
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
@@ -17,7 +17,7 @@ def create_user(username: str, email: str, password: str):
     """Creates a new user account or raises an error if the email is already in use."""
 
     if User.objects.filter(email=email).exists():
-        raise InvalidEmailError()
+        raise UserConflictError()
     try:
         return User.objects.create_user(
             username=username,
@@ -25,7 +25,7 @@ def create_user(username: str, email: str, password: str):
             password=password,
         )
     except IntegrityError as exc:
-        raise InvalidEmailError() from exc
+        raise UserConflictError() from exc
 
 
 def login_user(email: str, password: str):

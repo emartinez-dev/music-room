@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth.models import User
 
-from authentication.exceptions import InvalidEmailError
+from authentication.exceptions import UserConflictError
 from authentication.models import BlacklistedRefreshToken
 from authentication.services import (
     blacklist_refresh_token,
@@ -36,7 +36,7 @@ def test_create_user_existing_email_raises():
         password="password123",
     )
 
-    with pytest.raises(InvalidEmailError):
+    with pytest.raises(UserConflictError):
         create_user(
             username="another",
             email="marc@test.com",
@@ -51,7 +51,7 @@ def test_create_user_existing_username_raises():
         password="password123",
     )
 
-    with pytest.raises(InvalidEmailError):
+    with pytest.raises(UserConflictError):
         create_user(
             username="marc",
             email="marc2@test.com",

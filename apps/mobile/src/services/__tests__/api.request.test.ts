@@ -1,19 +1,19 @@
-jest.mock('expo-secure-store', () => ({
+jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn(),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
 
-jest.mock('../sessionManager', () => ({
+jest.mock("../sessionManager", () => ({
   sessionExpired: jest.fn(),
 }));
 
-import { Api } from '../api';
-import * as SecureStore from 'expo-secure-store';
+import { Api } from "../api";
+import * as SecureStore from "expo-secure-store";
 
 const mockedGetItemAsync = SecureStore.getItemAsync as jest.Mock;
 
-describe('Api request interceptor', () => {
+describe("Api request interceptor", () => {
   let originalAdapter: any;
 
   beforeEach(() => {
@@ -25,8 +25,8 @@ describe('Api request interceptor', () => {
     (Api.defaults as any).adapter = originalAdapter;
   });
 
-  it('should attach Authorization header with the access token string from secure store', async () => {
-    const accessToken = 'valid-access-token';
+  it("should attach Authorization header with the access token string from secure store", async () => {
+    const accessToken = "valid-access-token";
     mockedGetItemAsync.mockResolvedValue(accessToken);
 
     let capturedConfig: any = null;
@@ -36,7 +36,7 @@ describe('Api request interceptor', () => {
       return Promise.resolve({
         data: {},
         status: 200,
-        statusText: 'OK',
+        statusText: "OK",
         headers: {},
         config,
         request: {},
@@ -44,12 +44,12 @@ describe('Api request interceptor', () => {
     };
 
     try {
-      await Api.get('/test');
+      await Api.get("/test");
     } catch {
       // ignore
     }
 
-    expect(mockedGetItemAsync).toHaveBeenCalledWith('access-token');
+    expect(mockedGetItemAsync).toHaveBeenCalledWith("access-token");
     expect(capturedConfig.headers.Authorization).toBe(`Bearer ${accessToken}`);
   });
 });

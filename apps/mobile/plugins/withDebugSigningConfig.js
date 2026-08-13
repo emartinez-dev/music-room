@@ -45,10 +45,7 @@ function buildSharedDebugSigningConfig() {
 
 module.exports = function withDebugSigningConfig(config) {
   return withAppBuildGradle(config, (config) => {
-    const keystorePath = path.join(
-      config.modRequest.projectRoot,
-      KEYSTORE_FILENAME,
-    );
+    const keystorePath = path.join(config.modRequest.projectRoot, KEYSTORE_FILENAME);
 
     if (!fs.existsSync(keystorePath)) {
       console.warn(MISSING_KEYSTORE_WARNING);

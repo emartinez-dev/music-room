@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 export default function Index() {
   const { user, logout, me } = useAuth();
 
-
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home screen</Text>

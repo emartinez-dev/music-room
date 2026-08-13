@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { Alert } from "react-native"
+import { Alert } from "react-native";
 
 import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         logout,
         register,
-        me
+        me,
       }}
     >
       {children}
