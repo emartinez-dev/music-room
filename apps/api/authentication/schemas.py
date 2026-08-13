@@ -67,3 +67,12 @@ class GoogleLoginResponse(Schema):
 class GoogleUserResponse(Schema):
     id: str
     email: str
+
+
+# --- /auth/me/ ---
+
+
+class MeResponse(Schema):
+    id: str
+    email: str
+    username: str

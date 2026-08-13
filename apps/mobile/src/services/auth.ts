@@ -1,14 +1,15 @@
 import { Api } from "./api";
 
 type LoginResponse = { access: string; refresh: string };
+type MeResponse = { id: string; email: string; username: string };
 type GoogleLoginResponse = { access: string; refresh: string; user: { id: string; email: string } };
 type RegisterResponse = { id: string; email: string };
 type RefreshResponse = { access: string };
 
-export const loginApi = async (email: string, password: string): Promise<LoginResponse> => {
+export async function loginApi(email: string, password: string): Promise<LoginResponse> {
   const { data } = await Api.post("/auth/login", { email, password });
   return data;
-};
+}
 
 export async function googleLoginApi(idToken: string): Promise<GoogleLoginResponse> {
   const { data } = await Api.post("/auth/google", { id_token: idToken });
@@ -31,5 +32,10 @@ export async function refreshApi(refresh: string): Promise<RefreshResponse> {
 
 export async function logoutApi(refresh: string): Promise<null> {
   const { data } = await Api.post("/auth/logout", { refresh });
+  return data;
+}
+
+export async function meApi(): Promise<MeResponse> {
+  const { data } = await Api.get("/auth/me");
   return data;
 }

@@ -1,7 +1,8 @@
 import { AxiosError } from "axios";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { Alert } from "react-native"
 
-import { loginApi, logoutApi, registerApi } from "@/services/auth";
+import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
 
@@ -16,6 +17,7 @@ type AuthContextType = {
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  me: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,9 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const { access, refresh } = await loginApi(email, password);
-      saveTokens(access, refresh);
-      const user: User = { id: "123", email: email };
-      setUser(user);
+      await saveTokens(access, refresh);
+
+      const me = await meApi();
+
+      setUser(me);
       setIsAuthenticated(true);
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -105,6 +109,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
+  const me = async () => {
+    setIsLoading(true);
+    try {
+      const meData = await meApi();
+      setUser(meData);
+      Alert.alert("auth/me", JSON.stringify(meData, null, 2));
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Failed to load profile");
+      } else {
+        showSnackbar("Failed to load profile");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const checkAccessToken = async () => {
       const access = await getAccessToken();
@@ -131,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         logout,
         register,
+        me
       }}
     >
       {children}

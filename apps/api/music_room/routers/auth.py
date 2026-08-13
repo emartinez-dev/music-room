@@ -9,6 +9,7 @@ from authentication.schemas import (
     LoginResponse,
     LoginSchema,
     LogoutSchema,
+    MeResponse,
     RefreshResponse,
     RefreshSchema,
     RegisterResponse,
@@ -23,6 +24,7 @@ from authentication.services import (
 )
 
 auth_router = Router()
+jwt_auth = JWTAuth()
 
 
 # /auth/register
@@ -106,9 +108,19 @@ def refresh(request, data: RefreshSchema):
     return access
 
 
-# /auth/me (temporary endpoint for authentication testing)
-@auth_router.get("/me", auth=JWTAuth())
+# /auth/me
+@auth_router.get("/me", response=MeResponse, auth=jwt_auth)
 def me(request):
+    user = request.auth
+
+    if user is None:
+        return 404, {
+            "code": "not found",
+            "message": "Resource does not exist",
+        }
+
     return {
-        "message": "Authenticated",
+        "id": str(user.id),
+        "email": user.email,
+        "username": user.username,
     }

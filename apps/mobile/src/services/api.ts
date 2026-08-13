@@ -74,7 +74,7 @@ Api.interceptors.response.use(
 
         const { access } = response.data;
 
-        saveTokens(access, refreshToken);
+        await saveTokens(access, refreshToken);
 
         originalConfig.headers.Authorization = `Bearer ${access}`;
 
