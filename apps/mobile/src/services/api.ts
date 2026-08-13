@@ -43,7 +43,7 @@ Api.interceptors.request.use(
 
     return config;
   },
-  async (error) => Promise.reject(error),
+  (error) => Promise.reject(error),
 );
 
 // This interceptor will automatically refresh the access token when it's not valid anymore

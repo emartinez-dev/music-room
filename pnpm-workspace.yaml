@@ -5,7 +5,7 @@ packages:
 allowBuilds:
   msgpackr-extract: true
   msw: true
-  unrs-resolver: set this to true or false
+  unrs-resolver: false
 minimumReleaseAgeExclude:
   - '@expo/cli@56.1.14'
   - '@expo/fingerprint@0.19.4'

@@ -4,19 +4,19 @@ export async function saveTokens(access: string, refresh: string) {
   await Promise.all([setItemAsync("access-token", access), setItemAsync("refresh-token", refresh)]);
 }
 
-export async function setAccessToken(access: string) {
-  await setItemAsync("access-token", access);
+export function setAccessToken(access: string) {
+  return setItemAsync("access-token", access);
 }
 
-export async function setRefreshToken(refresh: string) {
-  await setItemAsync("refresh-token", refresh);
+export function setRefreshToken(refresh: string) {
+  return setItemAsync("refresh-token", refresh);
 }
 
-export async function getAccessToken() {
+export function getAccessToken() {
   return getItemAsync("access-token");
 }
 
-export async function getRefreshToken() {
+export function getRefreshToken() {
   return getItemAsync("refresh-token");
 }
 
