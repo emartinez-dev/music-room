@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import { AuthProvider, useAuth } from "../AuthContext";
-import { loginApi, logoutApi, registerApi } from "@/services/auth";
+import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
 
@@ -10,6 +10,7 @@ jest.mock("@/services/auth", () => ({
   loginApi: jest.fn(),
   logoutApi: jest.fn(),
   registerApi: jest.fn(),
+  meApi: jest.fn(),
 }));
 
 jest.mock("@/services/secureStore", () => ({
@@ -30,6 +31,7 @@ jest.mock("@/context/SnackbarContext", () => ({
 const mockedLoginApi = loginApi as jest.Mock;
 const mockedLogoutApi = logoutApi as jest.Mock;
 const mockedRegisterApi = registerApi as jest.Mock;
+const mockedMeApi = meApi as jest.Mock;
 const mockedSaveTokens = saveTokens as jest.Mock;
 const mockedClearTokens = clearTokens as jest.Mock;
 const mockedGetAccessToken = getAccessToken as jest.Mock;
@@ -76,6 +78,10 @@ describe("AuthContext", () => {
       mockedLoginApi.mockResolvedValue({
         access: "access-token",
         refresh: "refresh-token",
+      });
+      mockedMeApi.mockResolvedValue({
+        id: "123",
+        email: "user@example.com",
       });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });
@@ -139,6 +145,10 @@ describe("AuthContext", () => {
       mockedLoginApi.mockResolvedValue({
         access: "access-token",
         refresh: "refresh-token",
+      });
+      mockedMeApi.mockResolvedValue({
+        id: "123",
+        email: "user@example.com",
       });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });

@@ -259,3 +259,42 @@ def test_google_login_requires_id_token(client):
     )
 
     assert response.status_code == 422
+
+
+def test_token(client):
+    register_response = client.post(
+        "/api/auth/register",
+        data={
+            "username": "marc",
+            "email": "marc@test.com",
+            "password": "password123",
+        },
+        content_type="application/json",
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/api/auth/login",
+        data={
+            "email": "marc@test.com",
+            "password": "password123",
+        },
+        content_type="application/json",
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access"]
+
+    me_response = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION=f"Bearer {access_token}",
+    )
+
+    assert me_response.status_code == 200
+    assert me_response.json() == {
+        "id": register_response.json()["id"],
+        "email": "marc@test.com",
+        "username": "marc",
+    }
