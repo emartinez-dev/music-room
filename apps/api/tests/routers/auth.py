@@ -56,7 +56,7 @@ def test_register_existing_email(client):
 
     assert response.json() == {
         "code": "conflict",
-        "message": "Email already exists",
+        "message": "A user with these credentials already exists",
     }
 
 
