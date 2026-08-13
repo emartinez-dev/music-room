@@ -1,4 +1,5 @@
 import datetime
+import jwt
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -13,6 +14,8 @@ from authentication.utils import create_access_token, create_refresh_token, deco
 
 
 def create_user(username: str, email: str, password: str):
+    """Creates a new user account or raises an error if the email is already in use."""
+
     if User.objects.filter(email=email).exists():
         raise InvalidEmailError()
     try:
@@ -26,6 +29,8 @@ def create_user(username: str, email: str, password: str):
 
 
 def login_user(email: str, password: str):
+    """Authenticates a user or returns None if the email or password is invalid."""
+
     user_by_email = User.objects.filter(email=email).first()
 
     if not user_by_email:
@@ -46,7 +51,12 @@ def login_user(email: str, password: str):
 
 
 def blacklist_refresh_token(refresh_token: str):
-    payload = decode_token(refresh_token)
+    """Blacklists a refresh token or returns None if the token is invalid."""
+
+    try:
+        payload = decode_token(refresh_token)
+    except jwt.InvalidTokenError:
+        return None
 
     expires_at = datetime.datetime.fromtimestamp(
         payload["exp"],
@@ -60,7 +70,12 @@ def blacklist_refresh_token(refresh_token: str):
 
 
 def refresh_access_token(refresh_token: str):
-    payload = decode_token(refresh_token)
+    """Creates a new access token or returns None if the refresh token is invalid or blacklisted."""
+
+    try:
+        payload = decode_token(refresh_token)
+    except jwt.InvalidTokenError:
+        return None
 
     if BlacklistedRefreshToken.objects.filter(
         refresh_token=refresh_token,
@@ -73,6 +88,8 @@ def refresh_access_token(refresh_token: str):
 
 
 def login_with_google(id_token_string: str):
+    """Authenticates a user with Google or returns None if the token or required user information is invalid."""
+
     try:
         payload = id_token.verify_oauth2_token(
             id_token_string,
