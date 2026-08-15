@@ -76,3 +76,15 @@ class MeResponse(Schema):
     id: str
     email: str
     username: str
+
+
+# --- /auth/verify-email/ ---
+
+
+class VerifyEmailSchema(Schema):
+    token: str
+
+
+class VerifyEmailResponse(Schema):
+    code: str
+    message: str

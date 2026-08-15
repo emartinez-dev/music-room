@@ -14,12 +14,16 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (password !== confirmPassword) {
       // TODO: Mostrar error con Snackbar
       return;
     }
-    register(username, email, password);
+
+    const success = await register(username, email, password);
+    if (success) {
+      router.push("/(auth)/verify-email");
+    }
   };
 
   return (

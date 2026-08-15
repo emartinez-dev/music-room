@@ -14,6 +14,8 @@ from authentication.schemas import (
     RefreshSchema,
     RegisterResponse,
     RegisterSchema,
+    VerifyEmailResponse,
+    VerifyEmailSchema,
 )
 from authentication.services import (
     blacklist_refresh_token,
@@ -21,6 +23,7 @@ from authentication.services import (
     login_user,
     login_with_google,
     refresh_access_token,
+    verify_email,
 )
 
 auth_router = Router()
@@ -38,6 +41,29 @@ def register(request, data: RegisterSchema):
     )
 
     return 201, {"id": str(user.id), "email": user.email}
+
+
+# /auth/verify-email/
+@auth_router.post(
+    "/verify-email/",
+    response={
+        200: VerifyEmailResponse,
+        400: ErrorSchema,
+    },
+)
+def verify_email_with_body(request, data: VerifyEmailSchema):
+    success = verify_email(data.token)
+
+    if not success:
+        return 400, {
+            "code": "invalid_token",
+            "message": "Invalid or expired verification token",
+        }
+
+    return 200, {
+        "code": "verified",
+        "message": "Email verified successfully. You can now log in.",
+    }
 
 
 # /auth/login

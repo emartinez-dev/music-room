@@ -15,7 +15,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   me: () => Promise<void>;
 };
@@ -97,16 +97,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { email: registeredEmail } = await registerApi(username, email, password);
 
-      await login(registeredEmail, password);
+      showSnackbar(`Please check ${registeredEmail} for your verification code`);
+      return true;
     } catch (error) {
       if (error instanceof AxiosError) {
         showSnackbar(error.response?.data?.message ?? "Register failed");
       } else {
         showSnackbar("Register failed");
       }
-    }
 
-    setIsLoading(false);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const me = async () => {

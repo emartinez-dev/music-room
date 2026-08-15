@@ -5,27 +5,54 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.utils import timezone
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
+from authentication.email import send_verification_email
 from authentication.exceptions import UserConflictError
 from authentication.models import BlacklistedRefreshToken
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 
-def create_user(username: str, email: str, password: str):
-    """Creates a new user account or raises an error if the email is already in use."""
+def verify_email(token_uuid: str) -> bool:
+    """Uses the token to verify an email and activates the user if it's valid"""
+    from authentication.models import EmailVerificationToken
 
+    try:
+        token_obj = EmailVerificationToken.objects.select_related("user").get(token=token_uuid)
+    except EmailVerificationToken.DoesNotExist:
+        return False
+
+    if token_obj.used or token_obj.expires_at < timezone.now():
+        return False
+
+    user = token_obj.user
+    user.is_active = True
+    user.save()
+
+    token_obj.used = True
+    token_obj.save()
+
+    return True
+
+
+def create_user(username: str, email: str, password: str):
+    """Creates a new user account with email verification or raises an error."""
     if User.objects.filter(email=email).exists():
         raise UserConflictError()
     try:
-        return User.objects.create_user(
+        user = User.objects.create_user(
             username=username,
             email=email,
             password=password,
+            is_active=False,
         )
     except IntegrityError as exc:
         raise UserConflictError() from exc
+
+    send_verification_email(user)
+    return user
 
 
 def login_user(email: str, password: str):
@@ -42,6 +69,12 @@ def login_user(email: str, password: str):
     )
 
     if not user:
+        return None
+
+    if not user.is_active:
+        return None
+
+    if not user.is_active:
         return None
 
     return {

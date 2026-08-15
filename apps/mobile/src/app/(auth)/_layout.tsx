@@ -6,6 +6,7 @@ export default function TabLayout() {
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerTitle: "Create account" }} />
       <Stack.Screen name="reset" options={{ headerTitle: "Reset password" }} />
+      <Stack.Screen name="verify-email" options={{ headerTitle: "Verify email" }} />
     </Stack>
   );
 }
