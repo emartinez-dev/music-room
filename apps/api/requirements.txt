@@ -28,7 +28,7 @@ pycparser==3.0
 pydantic==2.13.4
 pydantic_core==2.46.4
 pyOpenSSL==26.2.0
-requests==2.32.5
+requests==2.33.0
 ruff==0.15.13
 service-identity==24.2.0
 sqlparse==0.5.5
