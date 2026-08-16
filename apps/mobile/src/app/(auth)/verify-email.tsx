@@ -3,13 +3,16 @@ import { useState } from "react";
 import { View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { useAuth } from "@/context/AuthContext";
+import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
 import { saveTokens } from "@/services/secureStore";
+import { AxiosError } from "axios";
 
 export default function VerifyEmailScreen() {
   const [token, setToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { checkAuth } = useAuth();
+  const { showSnackbar } = useSnackbar();
 
   const handleVerify = async () => {
     setIsLoading(true);
@@ -20,8 +23,12 @@ export default function VerifyEmailScreen() {
       await saveTokens(data.access, data.refresh);
       await checkAuth();
       router.replace("/(tabs)");
-    } catch {
-      // Handled by Api interceptor
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Please try again");
+      } else {
+        showSnackbar("Please try again");
+      }
     } finally {
       setIsLoading(false);
     }

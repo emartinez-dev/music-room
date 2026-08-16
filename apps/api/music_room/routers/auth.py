@@ -61,8 +61,6 @@ def verify_email(request, data: VerifyEmailSchema):
         }
 
     return 200, {
-        "code": "verified",
-        "message": "Email verified successfully",
         "access": success["access"],
         "refresh": success["refresh"],
     }
