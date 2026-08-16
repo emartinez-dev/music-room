@@ -5,7 +5,7 @@ import pytest
 from django.contrib.auth.models import User
 from django.test import Client
 
-from authentication.models import BlacklistedRefreshToken
+from authentication.models import BlacklistedRefreshToken, EmailVerificationToken
 from authentication.utils import create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
@@ -273,6 +273,15 @@ def test_token(client):
     )
 
     assert register_response.status_code == 201
+
+    verification_token = EmailVerificationToken.objects.get(user__email="marc@test.com")
+    verify_response = client.post(
+        "/api/auth/verify-email/",
+        data={"token": verification_token.token},
+        content_type="application/json",
+    )
+
+    assert verify_response.status_code == 200
 
     login_response = client.post(
         "/api/auth/login",

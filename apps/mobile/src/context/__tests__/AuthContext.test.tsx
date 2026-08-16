@@ -142,14 +142,6 @@ describe("AuthContext", () => {
         id: "abc-123",
         email: "user@example.com",
       });
-      mockedLoginApi.mockResolvedValue({
-        access: "access-token",
-        refresh: "refresh-token",
-      });
-      mockedMeApi.mockResolvedValue({
-        id: "123",
-        email: "user@example.com",
-      });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
@@ -158,8 +150,8 @@ describe("AuthContext", () => {
       });
 
       expect(mockedRegisterApi).toHaveBeenCalledWith("username", "user@example.com", "secret");
-      expect(mockedLoginApi).toHaveBeenCalledWith("user@example.com", "secret");
-      expect(result.current.isAuthenticated).toBe(true);
+      expect(mockedLoginApi).not.toHaveBeenCalled();
+      expect(result.current.isAuthenticated).toBe(false);
     });
 
     it("should not authenticate when register fails", async () => {
