@@ -1,18 +1,19 @@
 from ninja import NinjaAPI
 
-from .exceptions import InvalidEmailError
+from authentication.exceptions import UserConflictError
+
 from .routers.auth import auth_router
 
 api = NinjaAPI()
 
 
-@api.exception_handler(InvalidEmailError)
+@api.exception_handler(UserConflictError)
 def on_invalid_email(request, exc):
     return api.create_response(
         request,
         {
             "code": "conflict",
-            "message": "Email already exists",
+            "message": "A user with these credentials already exists",
         },
         status=409,
     )

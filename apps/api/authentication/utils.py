@@ -20,3 +20,11 @@ def create_refresh_token(user_id: int) -> str:
         "iat": datetime.datetime.now(datetime.UTC),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+
+def decode_token(token: str) -> dict:
+    return jwt.decode(
+        token,
+        settings.SECRET_KEY,
+        algorithms=["HS256"],
+    )

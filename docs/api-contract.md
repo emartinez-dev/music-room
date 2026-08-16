@@ -87,7 +87,15 @@ Response 204
 ```
 POST /auth/google
 Body: { id_token }   ← token from Google Sign-In on the mobile app
-Response 200: { access, refresh }
+Response 200: { access, refresh, user: { id, email } }
+```
+
+### Get current user
+
+```
+GET /auth/me
+Headers: Authorization: Bearer <access_token>
+Response 200: { id, email, username }
 ```
 
 ### Link Spotify account

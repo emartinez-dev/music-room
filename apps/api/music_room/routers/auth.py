@@ -1,17 +1,30 @@
 # Router, Schemas
 from ninja import Router
 
-from ..schemas.auth import (
+from authentication.auth import JWTAuth
+from authentication.schemas import (
     ErrorSchema,
+    GoogleLoginResponse,
+    GoogleLoginSchema,
     LoginResponse,
     LoginSchema,
     LogoutSchema,
+    MeResponse,
+    RefreshResponse,
+    RefreshSchema,
     RegisterResponse,
     RegisterSchema,
 )
-from ..services.auth import create_user, login_user
+from authentication.services import (
+    blacklist_refresh_token,
+    create_user,
+    login_user,
+    login_with_google,
+    refresh_access_token,
+)
 
 auth_router = Router()
+jwt_auth = JWTAuth()
 
 
 # /auth/register
@@ -47,9 +60,67 @@ def login(request, data: LoginSchema):
     return tokens
 
 
+# /auth/google
+@auth_router.post(
+    "/google",
+    response={
+        200: GoogleLoginResponse,
+        401: ErrorSchema,
+    },
+)
+def google_login(request, data: GoogleLoginSchema):
+    tokens = login_with_google(data.id_token)
+
+    if not tokens:
+        return 401, {
+            "code": "unauthorized",
+            "message": "Invalid Google credentials",
+        }
+
+    return tokens
+
+
 # /auth/logout
 @auth_router.post("/logout", response={204: None})
 def logout(request, data: LogoutSchema):
 
-    # TODO: Invalidate refresh tokens on logout before production deployment.
+    blacklist_refresh_token(data.refresh)
     return 204, None
+
+
+# /auth/refresh
+@auth_router.post(
+    "/refresh",
+    response={
+        200: RefreshResponse,
+        401: ErrorSchema,
+    },
+)
+def refresh(request, data: RefreshSchema):
+    access = refresh_access_token(data.refresh)
+
+    if not access:
+        return 401, {
+            "code": "unauthorized",
+            "message": "Invalid refresh token",
+        }
+
+    return access
+
+
+# /auth/me
+@auth_router.get("/me", response=MeResponse, auth=jwt_auth)
+def me(request):
+    user = request.auth
+
+    if user is None:
+        return 404, {
+            "code": "not found",
+            "message": "Resource does not exist",
+        }
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "username": user.username,
+    }

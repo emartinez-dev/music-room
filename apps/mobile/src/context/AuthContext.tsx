@@ -1,8 +1,11 @@
 import { AxiosError } from "axios";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { Alert } from "react-native";
 
-import { loginApi, logoutApi, registerApi } from "@/services/auth";
+import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
+import { setSessionExpiredHandler } from "@/services/sessionManager";
+
 import { useSnackbar } from "./SnackbarContext";
 
 type User = { id: string; email: string };
@@ -11,8 +14,10 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  me: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,24 +29,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { showSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    const access = getAccessToken();
-    if (access) setIsAuthenticated(true);
-  }, []);
-
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { access, refresh } = await loginApi(email, password);
-      saveTokens(access, refresh);
-      const user: User = { id: "123", email: email };
-      setUser(user);
+      await saveTokens(access, refresh);
+
+      const me = await meApi();
+
+      setUser(me);
       setIsAuthenticated(true);
     } catch (error) {
-      showSnackbar(String(error));
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Login failed");
+      } else {
+        showSnackbar("Login failed");
+      }
     }
     setIsLoading(false);
   };
+
+  const loginWithGoogle = async (tokens: { access: string; refresh: string; user: User }) => {
+    setIsLoading(true);
+
+    try {
+      saveTokens(tokens.access, tokens.refresh);
+
+      setUser(tokens.user);
+      setIsAuthenticated(true);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Google login failed");
+      } else {
+        showSnackbar("Google login failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = useCallback(async () => {
+    try {
+      const refresh = await getRefreshToken();
+
+      if (refresh) {
+        await logoutApi(refresh);
+      }
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error("Logout error:", JSON.stringify(error.response?.data, null, 2));
+
+        showSnackbar(error.response?.data?.message ?? "Logout failed");
+      } else {
+        console.error("Logout error:", error);
+        showSnackbar("Logout failed");
+      }
+    } finally {
+      clearTokens();
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  }, [showSnackbar]);
 
   const register = async (username: string, email: string, password: string) => {
     setIsLoading(true);
@@ -61,13 +109,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
-  const logout = async () => {
-    const refresh = getRefreshToken();
-    if (refresh) await logoutApi(refresh);
-    clearTokens();
-    setUser(null);
-    setIsAuthenticated(false);
+  const me = async () => {
+    setIsLoading(true);
+    try {
+      const meData = await meApi();
+      setUser(meData);
+      Alert.alert("auth/me", JSON.stringify(meData, null, 2));
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        showSnackbar(error.response?.data?.message ?? "Failed to load profile");
+      } else {
+        showSnackbar("Failed to load profile");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    const checkAccessToken = async () => {
+      const access = await getAccessToken();
+
+      if (access) {
+        setIsAuthenticated(true);
+      }
+    };
+
+    void checkAccessToken();
+
+    setSessionExpiredHandler(() => {
+      void logout();
+    });
+  }, [logout]);
 
   return (
     <AuthContext.Provider
@@ -76,8 +149,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated,
         login,
+        loginWithGoogle,
         logout,
         register,
+        me,
       }}
     >
       {children}

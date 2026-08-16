@@ -38,3 +38,41 @@ class LoginResponse(Schema):
 
 class LogoutSchema(Schema):
     refresh: str
+
+
+# --- /auth/refresh/ ---
+
+
+class RefreshSchema(Schema):
+    refresh: str
+
+
+class RefreshResponse(Schema):
+    access: str
+
+
+# --- /auth/google/ ---
+
+
+class GoogleLoginSchema(Schema):
+    id_token: str
+
+
+class GoogleLoginResponse(Schema):
+    access: str
+    refresh: str
+    user: GoogleUserResponse
+
+
+class GoogleUserResponse(Schema):
+    id: str
+    email: str
+
+
+# --- /auth/me/ ---
+
+
+class MeResponse(Schema):
+    id: str
+    email: str
+    username: str

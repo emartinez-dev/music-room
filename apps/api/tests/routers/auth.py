@@ -1,6 +1,12 @@
+import datetime
+from unittest.mock import patch
+
 import pytest
 from django.contrib.auth.models import User
 from django.test import Client
+
+from authentication.models import BlacklistedRefreshToken
+from authentication.utils import create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
 
@@ -50,7 +56,7 @@ def test_register_existing_email(client):
 
     assert response.json() == {
         "code": "conflict",
-        "message": "Email already exists",
+        "message": "A user with these credentials already exists",
     }
 
 
@@ -121,12 +127,174 @@ def test_login_invalid_password(client):
 
 
 def test_logout(client):
+    refresh_token = create_refresh_token(1)
+
     response = client.post(
         "/api/auth/logout",
         data={
-            "refresh": "dummy-token",
+            "refresh": refresh_token,
         },
         content_type="application/json",
     )
 
     assert response.status_code == 204
+
+    assert BlacklistedRefreshToken.objects.count() == 1
+
+    blacklisted = BlacklistedRefreshToken.objects.first()
+
+    assert blacklisted is not None
+    assert blacklisted.refresh_token == refresh_token
+
+
+def test_refresh_success(client):
+    refresh_token = create_refresh_token(1)
+
+    response = client.post(
+        "/api/auth/refresh",
+        data={
+            "refresh": refresh_token,
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert "access" in body
+
+
+def test_refresh_blacklisted_token(client):
+    refresh_token = create_refresh_token(1)
+
+    BlacklistedRefreshToken.objects.create(
+        refresh_token=refresh_token,
+        expires_at=datetime.datetime.fromtimestamp(
+            decode_token(refresh_token)["exp"],
+            tz=datetime.UTC,
+        ),
+    )
+
+    response = client.post(
+        "/api/auth/refresh",
+        data={
+            "refresh": refresh_token,
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "code": "unauthorized",
+        "message": "Invalid refresh token",
+    }
+
+
+@patch("music_room.routers.auth.login_with_google")
+def test_google_login_success(mock_login_with_google, client):
+    mock_login_with_google.return_value = {
+        "access": "access-token",
+        "refresh": "refresh-token",
+        "user": {
+            "id": "1",
+            "email": "marc@test.com",
+        },
+    }
+
+    response = client.post(
+        "/api/auth/google",
+        data={
+            "id_token": "valid-google-id-token",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "access": "access-token",
+        "refresh": "refresh-token",
+        "user": {
+            "id": "1",
+            "email": "marc@test.com",
+        },
+    }
+
+    mock_login_with_google.assert_called_once_with(
+        "valid-google-id-token",
+    )
+
+
+@patch("music_room.routers.auth.login_with_google")
+def test_google_login_invalid_credentials(mock_login_with_google, client):
+    mock_login_with_google.return_value = None
+
+    response = client.post(
+        "/api/auth/google",
+        data={
+            "id_token": "invalid-google-id-token",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "code": "unauthorized",
+        "message": "Invalid Google credentials",
+    }
+
+    mock_login_with_google.assert_called_once_with(
+        "invalid-google-id-token",
+    )
+
+
+def test_google_login_requires_id_token(client):
+    response = client.post(
+        "/api/auth/google",
+        data={},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422
+
+
+def test_token(client):
+    register_response = client.post(
+        "/api/auth/register",
+        data={
+            "username": "marc",
+            "email": "marc@test.com",
+            "password": "password123",
+        },
+        content_type="application/json",
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/api/auth/login",
+        data={
+            "email": "marc@test.com",
+            "password": "password123",
+        },
+        content_type="application/json",
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = login_response.json()["access"]
+
+    me_response = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION=f"Bearer {access_token}",
+    )
+
+    assert me_response.status_code == 200
+    assert me_response.json() == {
+        "id": register_response.json()["id"],
+        "email": "marc@test.com",
+        "username": "marc",
+    }

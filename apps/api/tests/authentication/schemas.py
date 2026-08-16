@@ -1,8 +1,11 @@
 import pytest
 from pydantic import ValidationError
 
-from music_room.schemas.auth import (
+from authentication.schemas import (
     ErrorSchema,
+    GoogleLoginResponse,
+    GoogleLoginSchema,
+    GoogleUserResponse,
     LoginResponse,
     LoginSchema,
     LogoutSchema,
@@ -77,3 +80,42 @@ def test_error_schema():
 
     assert error.code == "conflict"
     assert error.message == "Email already exists"
+
+
+def test_google_login_schema():
+    schema = GoogleLoginSchema(
+        id_token="google-id-token",
+    )
+
+    assert schema.id_token == "google-id-token"
+
+
+def test_google_login_schema_requires_id_token():
+    with pytest.raises(ValidationError):
+        GoogleLoginSchema()
+
+
+def test_google_user_response():
+    response = GoogleUserResponse(
+        id="1",
+        email="marc@test.com",
+    )
+
+    assert response.id == "1"
+    assert response.email == "marc@test.com"
+
+
+def test_google_login_response():
+    response = GoogleLoginResponse(
+        access="access-token",
+        refresh="refresh-token",
+        user={
+            "id": "1",
+            "email": "marc@test.com",
+        },
+    )
+
+    assert response.access == "access-token"
+    assert response.refresh == "refresh-token"
+    assert response.user.id == "1"
+    assert response.user.email == "marc@test.com"
