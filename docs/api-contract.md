@@ -98,6 +98,14 @@ Headers: Authorization: Bearer <access_token>
 Response 200: { id, email, username }
 ```
 
+### Verify email
+
+```
+POST /auth/verify-email/
+Body: { token }
+Response 200: { access, refresh }
+```
+
 ### Link Spotify account
 
 [Docs](https://developer.spotify.com/documentation/web-api/concepts/authorization)

@@ -15,7 +15,7 @@ from authentication.models import BlacklistedRefreshToken
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 
-def verify_email(token_uuid: str) -> dict | None:
+def verify_email_user(token_uuid: str) -> dict | None:
     """Uses the token to verify an email and activates the user if it's valid"""
     from authentication.models import EmailVerificationToken
 

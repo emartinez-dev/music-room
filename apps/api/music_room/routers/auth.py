@@ -23,7 +23,7 @@ from authentication.services import (
     login_user,
     login_with_google,
     refresh_access_token,
-    verify_email,
+    verify_email_user,
 )
 
 auth_router = Router()
@@ -51,8 +51,8 @@ def register(request, data: RegisterSchema):
         400: ErrorSchema,
     },
 )
-def verify_email_with_body(request, data: VerifyEmailSchema):
-    success = verify_email(data.token)
+def verify_email(request, data: VerifyEmailSchema):
+    success = verify_email_user(data.token)
 
     if not success:
         return 400, {
