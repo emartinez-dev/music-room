@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
@@ -6,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
 import { saveTokens } from "@/services/secureStore";
-import { AxiosError } from "axios";
 
 export default function VerifyEmailScreen() {
   const [token, setToken] = useState("");

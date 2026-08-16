@@ -1,4 +1,5 @@
 # Router, Schemas
+from django.contrib.auth.models import User
 from ninja import Router
 
 from authentication.auth import JWTAuth
@@ -10,10 +11,14 @@ from authentication.schemas import (
     LoginSchema,
     LogoutSchema,
     MeResponse,
+    PasswordResetResponse,
+    PasswordResetSchema,
     RefreshResponse,
     RefreshSchema,
     RegisterResponse,
     RegisterSchema,
+    RequestPasswordResetResponse,
+    RequestPasswordResetSchema,
     VerifyEmailResponse,
     VerifyEmailSchema,
 )
@@ -23,6 +28,8 @@ from authentication.services import (
     login_user,
     login_with_google,
     refresh_access_token,
+    reset_password,
+    send_password_reset_email,
     verify_email_user,
 )
 
@@ -51,7 +58,7 @@ def register(request, data: RegisterSchema):
         400: ErrorSchema,
     },
 )
-def verify_email(request, data: VerifyEmailSchema):
+def verify_email_with_body(request, data: VerifyEmailSchema):
     success = verify_email_user(data.token)
 
     if not success:
@@ -64,6 +71,50 @@ def verify_email(request, data: VerifyEmailSchema):
         "access": success["access"],
         "refresh": success["refresh"],
     }
+
+
+# /auth/request-password-reset/
+@auth_router.post(
+    "/request-password-reset/",
+    response={
+        200: RequestPasswordResetResponse,
+        404: ErrorSchema,
+    },
+)
+def request_password_reset(request, data: RequestPasswordResetSchema):
+    user = User.objects.filter(email=data.email).first()
+
+    if not user:
+        return 404, {
+            "code": "not_found",
+            "message": "User with this email does not exist",
+        }
+
+    send_password_reset_email(user)
+
+    return 200, {"id": str(user.id), "email": user.email}
+
+
+# /auth/reset-password/
+@auth_router.post(
+    "/reset-password/",
+    response={
+        200: PasswordResetResponse,
+        400: ErrorSchema,
+    },
+)
+def reset_password_endpoint(request, data: PasswordResetSchema):
+    success = reset_password(data.token, data.new_password)
+
+    if not success:
+        return 400, {
+            "code": "invalid_token",
+            "message": "Invalid or expired verification token",
+        }
+
+    user = User.objects.get(email=data.email)
+
+    return 200, {"id": str(user.id), "email": user.email}
 
 
 # /auth/login

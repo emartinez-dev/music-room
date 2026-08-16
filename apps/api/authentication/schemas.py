@@ -88,3 +88,29 @@ class VerifyEmailSchema(Schema):
 class VerifyEmailResponse(Schema):
     access: str
     refresh: str
+
+
+# --- /auth/request-password-reset/ ---
+
+
+class RequestPasswordResetSchema(Schema):
+    email: str
+
+
+class RequestPasswordResetResponse(Schema):
+    id: str
+    email: str
+
+
+# --- /auth/reset-password/ ---
+
+
+class PasswordResetSchema(Schema):
+    email: str
+    token: str
+    new_password: str
+
+
+class PasswordResetResponse(Schema):
+    id: str
+    email: str

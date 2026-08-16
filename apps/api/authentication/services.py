@@ -156,3 +156,32 @@ def login_with_google(id_token_string: str):
             "email": user.email,
         },
     }
+
+
+def send_password_reset_email(user):
+    """Generates a verification token and sends a password reset email to the user"""
+
+    return send_verification_email(user)
+
+
+def reset_password(token_uuid: str, new_password: str) -> bool:
+    """Uses the token to reset the user's password if it's valid"""
+
+    from authentication.models import EmailVerificationToken
+
+    try:
+        token_obj = EmailVerificationToken.objects.select_related("user").get(token=token_uuid)
+    except EmailVerificationToken.DoesNotExist:
+        return False
+
+    if token_obj.used or token_obj.expires_at < timezone.now():
+        return False
+
+    user = token_obj.user
+    user.set_password(new_password)
+    user.save()
+
+    token_obj.used = True
+    token_obj.save()
+
+    return True
