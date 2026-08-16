@@ -52,6 +52,40 @@ describe("RegisterScreen", () => {
     });
   });
 
+  it("should navigate to verify-email screen when registration succeeds", async () => {
+    register.mockResolvedValue(true);
+
+    await render(<RegisterScreen />);
+
+    await fireEvent.changeText(screen.getByLabelText("Username"), "username");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.changeText(screen.getByLabelText("Confirm Password"), "secret");
+    await fireEvent.press(screen.getByText("Create account"));
+
+    await waitFor(() => {
+      expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/verify-email");
+    });
+  });
+
+  it("should not navigate to verify-email when registration fails", async () => {
+    register.mockResolvedValue(false);
+
+    await render(<RegisterScreen />);
+
+    await fireEvent.changeText(screen.getByLabelText("Username"), "username");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.changeText(screen.getByLabelText("Confirm Password"), "secret");
+    await fireEvent.press(screen.getByText("Create account"));
+
+    await waitFor(() => {
+      expect(register).toHaveBeenCalledWith("username", "user@example.com", "secret");
+    });
+
+    expect(mockedRouterPush).not.toHaveBeenCalled();
+  });
+
   it("should not call register when passwords do not match", async () => {
     await render(<RegisterScreen />);
 
