@@ -25,7 +25,7 @@ def send_verification_email(user):
             f"{verify_url}\n\n"
             f"This code will expire in 24 hours."
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=f"Music Room <{settings.EMAIL_HOST_USER}>",
         recipient_list=[user.email],
         fail_silently=False,
     )
