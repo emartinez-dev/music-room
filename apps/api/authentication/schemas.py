@@ -88,3 +88,5 @@ class VerifyEmailSchema(Schema):
 class VerifyEmailResponse(Schema):
     code: str
     message: str
+    access: str
+    refresh: str

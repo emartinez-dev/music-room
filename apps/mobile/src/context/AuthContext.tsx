@@ -18,6 +18,7 @@ type AuthContextType = {
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   me: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,12 +30,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { showSnackbar } = useSnackbar();
 
+  const checkAuth = async () => {
+    const access = await getAccessToken();
+    setIsAuthenticated(!!access);
+  };
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { access, refresh } = await loginApi(email, password);
       await saveTokens(access, refresh);
-
+      await checkAuth();
       const me = await meApi();
 
       setUser(me);
@@ -156,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         register,
         me,
+        checkAuth,
       }}
     >
       {children}

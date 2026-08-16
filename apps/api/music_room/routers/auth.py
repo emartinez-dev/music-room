@@ -62,7 +62,9 @@ def verify_email_with_body(request, data: VerifyEmailSchema):
 
     return 200, {
         "code": "verified",
-        "message": "Email verified successfully. You can now log in.",
+        "message": "Email verified successfully",
+        "access": success["access"],
+        "refresh": success["refresh"],
     }
 
 

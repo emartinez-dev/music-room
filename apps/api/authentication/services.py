@@ -15,17 +15,17 @@ from authentication.models import BlacklistedRefreshToken
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 
-def verify_email(token_uuid: str) -> bool:
+def verify_email(token_uuid: str) -> dict | None:
     """Uses the token to verify an email and activates the user if it's valid"""
     from authentication.models import EmailVerificationToken
 
     try:
         token_obj = EmailVerificationToken.objects.select_related("user").get(token=token_uuid)
     except EmailVerificationToken.DoesNotExist:
-        return False
+        return None
 
     if token_obj.used or token_obj.expires_at < timezone.now():
-        return False
+        return None
 
     user = token_obj.user
     user.is_active = True
@@ -34,7 +34,11 @@ def verify_email(token_uuid: str) -> bool:
     token_obj.used = True
     token_obj.save()
 
-    return True
+    return {
+        "access": create_access_token(user.id),
+        "refresh": create_refresh_token(user.id),
+        "email": user.email,
+    }
 
 
 def create_user(username: str, email: str, password: str):
@@ -69,9 +73,6 @@ def login_user(email: str, password: str):
     )
 
     if not user:
-        return None
-
-    if not user.is_active:
         return None
 
     if not user.is_active:

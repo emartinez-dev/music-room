@@ -2,20 +2,24 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
-
+import { useAuth } from "@/context/AuthContext";
 import { Api } from "@/services/api";
+import { saveTokens } from "@/services/secureStore";
 
 export default function VerifyEmailScreen() {
   const [token, setToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { checkAuth } = useAuth();
 
   const handleVerify = async () => {
     setIsLoading(true);
 
     try {
-      await Api.post("/auth/verify-email/", { token });
+      const { data } = await Api.post("/auth/verify-email/", { token });
 
-      router.replace("/(auth)/login");
+      await saveTokens(data.access, data.refresh);
+      await checkAuth();
+      router.replace("/(tabs)");
     } catch {
       // Handled by Api interceptor
     } finally {

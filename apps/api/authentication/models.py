@@ -1,6 +1,10 @@
-import uuid
+import random
 
 from django.db import models
+
+
+def generate_six_digit_token():
+    return f"{random.randint(0, 999999):06d}"
 
 
 class BlacklistedRefreshToken(models.Model):
@@ -18,7 +22,11 @@ class EmailVerificationToken(models.Model):
         on_delete=models.CASCADE,
         related_name="email_verification_tokens",
     )
-    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    token = models.CharField(
+        max_length=6,
+        default=generate_six_digit_token,
+        unique=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     used = models.BooleanField(default=False)
