@@ -17,7 +17,7 @@ type AuthContextType = {
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  me: () => Promise<void>;
+  me: (silent?: boolean) => Promise<void>;
   checkAuth: () => Promise<void>;
 };
 
@@ -118,12 +118,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const me = async () => {
+  const me = async (silent: boolean = false) => {
     setIsLoading(true);
     try {
       const meData = await meApi();
       setUser(meData);
-      Alert.alert("auth/me", JSON.stringify(meData, null, 2));
+      if (!silent) {
+        Alert.alert("auth/me", JSON.stringify(meData, null, 2));
+      }
     } catch (error) {
       if (error instanceof AxiosError) {
         showSnackbar(error.response?.data?.message ?? "Failed to load profile");

@@ -11,7 +11,7 @@ import { AxiosError } from "axios";
 export default function VerifyEmailScreen() {
   const [token, setToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { checkAuth } = useAuth();
+  const { checkAuth, me } = useAuth();
   const { showSnackbar } = useSnackbar();
 
   const handleVerify = async () => {
@@ -22,6 +22,7 @@ export default function VerifyEmailScreen() {
 
       await saveTokens(data.access, data.refresh);
       await checkAuth();
+      await me(true);
       router.replace("/(tabs)");
     } catch (error) {
       if (error instanceof AxiosError) {
