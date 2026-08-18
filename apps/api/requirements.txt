@@ -22,7 +22,7 @@ packaging==26.2
 psycopg==3.3.4
 psycopg-binary==3.3.4
 py-ubjson==0.16.1
-pyasn1==0.6.3
+pyasn1==0.6.4
 pyasn1_modules==0.4.2
 pycparser==3.0
 pydantic==2.13.4
