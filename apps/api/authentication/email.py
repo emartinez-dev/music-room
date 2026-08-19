@@ -13,19 +13,26 @@ def send_verification_email(user):
     expires_at = timezone.now() + datetime.timedelta(hours=24)
     token_obj = EmailVerificationToken.objects.create(user=user, expires_at=expires_at)
 
-    # verify_url = f"{settings.FRONTEND_URL}/verify-email/{token_obj.token}/"
+    verify_url = f"{settings.EMAIL_VERIFY_URL}/verify-email?token={token_obj.token}"
 
     send_mail(
         subject="Verify your email for Music Room",
         message=(
             f"Hello {user.username}!\n\n"
-            f"Your verification code is:\n\n"
-            f"{token_obj.token}\n\n"
-            f"This code will expire in 24 hours."
+            f"Open this link on your phone to verify your email:\n\n"
+            f"{verify_url}\n\n"
+            f"Or enter this code manually: {token_obj.token}\n\n"
+            f"This link will expire in 24 hours."
         ),
         from_email=f"Music Room <{settings.EMAIL_HOST_USER}>",
         recipient_list=[user.email],
         fail_silently=False,
+        html_message=(
+            f"<p>Hello {user.username}!</p>"
+            f'<p><a href="{verify_url}">Tap here to verify your email</a></p>'
+            f"<p>Or enter this code manually: <strong>{token_obj.token}</strong></p>"
+            f"<p>This link will expire in 24 hours.</p>"
+        ),
     )
 
     return token_obj

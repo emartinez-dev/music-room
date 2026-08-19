@@ -11,13 +11,12 @@ from google.oauth2 import id_token
 
 from authentication.email import send_verification_email
 from authentication.exceptions import UserConflictError
-from authentication.models import BlacklistedRefreshToken
+from authentication.models import BlacklistedRefreshToken, EmailVerificationToken
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 
 def verify_email_user(token_uuid: str) -> dict | None:
     """Uses the token to verify an email and activates the user if it's valid"""
-    from authentication.models import EmailVerificationToken
 
     try:
         token_obj = EmailVerificationToken.objects.select_related("user").get(token=token_uuid)

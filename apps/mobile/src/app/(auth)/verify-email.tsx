@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { useAuth } from "@/context/AuthContext";
@@ -9,16 +9,17 @@ import { Api } from "@/services/api";
 import { saveTokens } from "@/services/secureStore";
 
 export default function VerifyEmailScreen() {
-  const [token, setToken] = useState("");
+  const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
+  const [token, setToken] = useState(tokenParam ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const { checkAuth, me } = useAuth();
   const { showSnackbar } = useSnackbar();
 
-  const handleVerify = async () => {
+  const handleVerify = async (tokenToVerify: string) => {
     setIsLoading(true);
 
     try {
-      const { data } = await Api.post("/auth/verify-email/", { token });
+      const { data } = await Api.post("/auth/verify-email/", { token: tokenToVerify });
 
       await saveTokens(data.access, data.refresh);
       await checkAuth();
@@ -35,6 +36,12 @@ export default function VerifyEmailScreen() {
     }
   };
 
+  useEffect(() => {
+    if (tokenParam) {
+      void handleVerify(tokenParam);
+    }
+  }, [tokenParam]);
+
   return (
     <View className="flex m-4 gap-2">
       <TextInput
@@ -46,7 +53,7 @@ export default function VerifyEmailScreen() {
         autoComplete="one-time-code"
         left={<TextInput.Icon icon="email-check" />}
       />
-      <Button mode="contained" onPress={handleVerify} disabled={isLoading}>
+      <Button mode="contained" onPress={() => handleVerify(token)} disabled={isLoading}>
         Verify email
       </Button>
     </View>
