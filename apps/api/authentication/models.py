@@ -2,6 +2,7 @@ import random
 import secrets
 
 from django.db import models
+from django.utils import timezone
 
 
 def generate_six_digit_token():
@@ -40,3 +41,15 @@ class EmailVerificationToken(models.Model):
 
     def __str__(self):
         return f"Verification for {self.user.email} ({'used' if self.used else 'unused'})"
+
+
+class PasswordChangeLog(models.Model):
+    user = models.OneToOneField(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="password_change_log",
+    )
+    changed_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Password change for {self.user.email} at {self.changed_at}"

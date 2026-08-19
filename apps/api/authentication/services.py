@@ -11,7 +11,7 @@ from google.oauth2 import id_token
 
 from authentication.email import send_verification_email
 from authentication.exceptions import UserConflictError
-from authentication.models import BlacklistedRefreshToken, EmailVerificationToken
+from authentication.models import BlacklistedRefreshToken, EmailVerificationToken, PasswordChangeLog
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 
@@ -109,7 +109,7 @@ def blacklist_refresh_token(refresh_token: str):
 
 
 def refresh_access_token(refresh_token: str):
-    """Creates a new access token or returns None if the refresh token is invalid or blacklisted."""
+    """Creates a new access token or returns None if the refresh token is invalid, blacklisted, or stale."""
 
     try:
         payload = decode_token(refresh_token)
@@ -120,6 +120,14 @@ def refresh_access_token(refresh_token: str):
         refresh_token=refresh_token,
     ).exists():
         return None
+
+    try:
+        changed_at = PasswordChangeLog.objects.get(user_id=payload["user_id"]).changed_at
+        issued_at = datetime.datetime.fromtimestamp(payload["iat"], tz=datetime.UTC)
+        if issued_at < changed_at:
+            return None
+    except PasswordChangeLog.DoesNotExist:
+        pass
 
     return {
         "access": create_access_token(payload["user_id"]),
@@ -197,6 +205,8 @@ def reset_password(token_uuid: str, new_password: str) -> bool:
     user = token_obj.user
     user.set_password(new_password)
     user.save()
+
+    PasswordChangeLog.objects.update_or_create(user=user, defaults={"changed_at": timezone.now()})
 
     token_obj.used = True
     token_obj.save()
