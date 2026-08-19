@@ -19,6 +19,8 @@ from authentication.schemas import (
     RegisterSchema,
     RequestPasswordResetResponse,
     RequestPasswordResetSchema,
+    ResendVerificationResponse,
+    ResendVerificationSchema,
     VerifyEmailResponse,
     VerifyEmailSchema,
 )
@@ -28,6 +30,7 @@ from authentication.services import (
     login_user,
     login_with_google,
     refresh_access_token,
+    resend_verification_email,
     reset_password,
     send_password_reset_email,
     verify_email_user,
@@ -71,6 +74,26 @@ def verify_email_with_body(request, data: VerifyEmailSchema):
         "access": success["access"],
         "refresh": success["refresh"],
     }
+
+
+# /auth/resend-verification/
+@auth_router.post(
+    "/resend-verification/",
+    response={
+        200: ResendVerificationResponse,
+        404: ErrorSchema,
+    },
+)
+def resend_verification(request, data: ResendVerificationSchema):
+    user = resend_verification_email(data.email)
+
+    if not user:
+        return 404, {
+            "code": "not_found",
+            "message": "User with this email does not exist or is already verified",
+        }
+
+    return 200, {"id": str(user.id), "email": user.email}
 
 
 # /auth/request-password-reset/

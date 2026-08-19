@@ -114,3 +114,15 @@ class PasswordResetSchema(Schema):
 class PasswordResetResponse(Schema):
     id: str
     email: str
+
+
+# --- /auth/resend-verification/ ---
+
+
+class ResendVerificationSchema(Schema):
+    email: str
+
+
+class ResendVerificationResponse(Schema):
+    id: str
+    email: str

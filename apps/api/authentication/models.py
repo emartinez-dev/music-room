@@ -1,10 +1,17 @@
 import random
+import secrets
 
 from django.db import models
 
 
 def generate_six_digit_token():
+    # Kept for migration 0003, which references this function by import path.
+    # UNUSED - do not remove without collapsing that migration.
     return f"{random.randint(0, 999999):06d}"
+
+
+def generate_verification_token():
+    return secrets.token_urlsafe(32)
 
 
 class BlacklistedRefreshToken(models.Model):
@@ -23,8 +30,8 @@ class EmailVerificationToken(models.Model):
         related_name="email_verification_tokens",
     )
     token = models.CharField(
-        max_length=6,
-        default=generate_six_digit_token,
+        max_length=64,
+        default=generate_verification_token,
         unique=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)

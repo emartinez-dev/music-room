@@ -4,7 +4,7 @@ import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from google.auth.transport import requests
 from google.oauth2 import id_token
@@ -42,19 +42,25 @@ def verify_email_user(token_uuid: str) -> dict | None:
 
 def create_user(username: str, email: str, password: str):
     """Creates a new user account with email verification or raises an error."""
-    if User.objects.filter(email=email).exists():
+    existing_user = User.objects.filter(email=email).first()
+    if existing_user:
+        if not existing_user.is_active:
+            return existing_user
         raise UserConflictError()
-    try:
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            is_active=False,
-        )
-    except IntegrityError as exc:
-        raise UserConflictError() from exc
 
-    send_verification_email(user)
+    with transaction.atomic():
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                is_active=False,
+            )
+        except IntegrityError as exc:
+            raise UserConflictError() from exc
+
+        send_verification_email(user)
+
     return user
 
 
@@ -161,6 +167,18 @@ def send_password_reset_email(user):
     """Generates a verification token and sends a password reset email to the user"""
 
     return send_verification_email(user)
+
+
+def resend_verification_email(email: str):
+    """Resends the email verification token, or returns None if not eligible."""
+    # TODO: rate-limit with Redis
+    user = User.objects.filter(email=email).first()
+
+    if not user or user.is_active:
+        return None
+
+    send_verification_email(user)
+    return user
 
 
 def reset_password(token_uuid: str, new_password: str) -> bool:

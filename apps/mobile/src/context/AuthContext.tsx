@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { email: registeredEmail } = await registerApi(username, email, password);
 
-      showSnackbar(`Please check ${registeredEmail} for your verification code`);
+      showSnackbar(`Check ${registeredEmail} to verify your account`);
       return true;
     } catch (error) {
       if (error instanceof AxiosError) {

@@ -58,7 +58,8 @@ Api.interceptors.response.use(
       !originalConfig?.url?.includes("/auth/login") &&
       !originalConfig?.url?.includes("/auth/register") &&
       !originalConfig?.url?.includes("/auth/refresh") &&
-      !originalConfig?.url?.includes("/auth/verify-email")
+      !originalConfig?.url?.includes("/auth/verify-email") &&
+      !originalConfig?.url?.includes("/auth/resend-verification")
     ) {
       originalConfig._retry = true;
 

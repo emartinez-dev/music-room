@@ -2,60 +2,78 @@ import { AxiosError } from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, TextInput } from "react-native-paper";
+import { ActivityIndicator, Button, Text } from "react-native-paper";
 import { useAuth } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
+import { resendVerificationApi } from "@/services/auth";
 import { saveTokens } from "@/services/secureStore";
 
 export default function VerifyEmailScreen() {
-  const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
-  const [token, setToken] = useState(tokenParam ?? "");
-  const [isLoading, setIsLoading] = useState(false);
+  const { token, email } = useLocalSearchParams<{ token?: string; email?: string }>();
+  const [isLoading, setIsLoading] = useState(!!token);
+  const [isResending, setIsResending] = useState(false);
   const { checkAuth, me } = useAuth();
   const { showSnackbar } = useSnackbar();
 
-  const handleVerify = async (tokenToVerify: string) => {
-    setIsLoading(true);
+  useEffect(() => {
+    if (!token) return;
 
+    const verify = async () => {
+      try {
+        const { data } = await Api.post("/auth/verify-email/", { token });
+
+        await saveTokens(data.access, data.refresh);
+        await checkAuth();
+        await me(true);
+        router.replace("/(tabs)");
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          showSnackbar(error.response?.data?.message ?? "Please try again");
+        } else {
+          showSnackbar("Please try again");
+        }
+        setIsLoading(false);
+      }
+    };
+
+    void verify();
+  }, [token]);
+
+  const handleResend = async () => {
+    if (!email) return;
+
+    setIsResending(true);
     try {
-      const { data } = await Api.post("/auth/verify-email/", { token: tokenToVerify });
-
-      await saveTokens(data.access, data.refresh);
-      await checkAuth();
-      await me(true);
-      router.replace("/(tabs)");
+      await resendVerificationApi(email);
+      showSnackbar(`Verification email sent to ${email}`);
     } catch (error) {
       if (error instanceof AxiosError) {
-        showSnackbar(error.response?.data?.message ?? "Please try again");
+        showSnackbar(error.response?.data?.message ?? "Could not resend email");
       } else {
-        showSnackbar("Please try again");
+        showSnackbar("Could not resend email");
       }
     } finally {
-      setIsLoading(false);
+      setIsResending(false);
     }
   };
 
-  useEffect(() => {
-    if (tokenParam) {
-      void handleVerify(tokenParam);
-    }
-  }, [tokenParam]);
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center gap-2">
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   return (
-    <View className="flex m-4 gap-2">
-      <TextInput
-        label="Verification code"
-        value={token}
-        onChangeText={setToken}
-        mode="outlined"
-        autoCapitalize="none"
-        autoComplete="one-time-code"
-        left={<TextInput.Icon icon="email-check" />}
-      />
-      <Button mode="contained" onPress={() => handleVerify(token)} disabled={isLoading}>
-        Verify email
-      </Button>
+    <View className="flex-1 items-center justify-center gap-2">
+      <Text>Open the link from your email to verify your account.</Text>
+      {email ? (
+        <Button mode="text" onPress={handleResend} disabled={isResending}>
+          Resend verification email
+        </Button>
+      ) : null}
     </View>
   );
 }

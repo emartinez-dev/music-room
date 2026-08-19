@@ -22,7 +22,7 @@ export default function RegisterScreen() {
 
     const success = await register(username, email, password);
     if (success) {
-      router.push("/(auth)/verify-email");
+      router.push({ pathname: "/(auth)/verify-email", params: { email } });
     }
   };
 
