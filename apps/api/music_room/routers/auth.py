@@ -127,7 +127,7 @@ def request_password_reset(request, data: RequestPasswordResetSchema):
     },
 )
 def reset_password_endpoint(request, data: PasswordResetSchema):
-    success = reset_password(data.token, data.new_password)
+    success = reset_password(data.token, data.email, data.new_password)
 
     if not success:
         return 400, {

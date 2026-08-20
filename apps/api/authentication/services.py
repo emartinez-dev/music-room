@@ -189,10 +189,8 @@ def resend_verification_email(email: str):
     return user
 
 
-def reset_password(token_uuid: str, new_password: str) -> bool:
+def reset_password(token_uuid: str, email: str, new_password: str) -> bool:
     """Uses the token to reset the user's password if it's valid"""
-
-    from authentication.models import EmailVerificationToken
 
     try:
         token_obj = EmailVerificationToken.objects.select_related("user").get(token=token_uuid)
@@ -200,6 +198,9 @@ def reset_password(token_uuid: str, new_password: str) -> bool:
         return False
 
     if token_obj.used or token_obj.expires_at < timezone.now():
+        return False
+
+    if token_obj.user.email != email:
         return False
 
     user = token_obj.user
