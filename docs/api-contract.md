@@ -44,7 +44,7 @@ Common error codes:
 | `not_found`        | 404         | Resource does not exist                             |
 | `conflict`         | 409         | Concurrency conflict (playlist reorder)             |
 | `rate_limited`     | 429         | Too many requests, includes `Retry-After` header    |
-| `validation_error` | 422         | Invalid request body, `message` describes the field |
+| `validation_error` | 400         | Invalid request body, `message` describes the field |
 
 ## Authentication
 
@@ -104,6 +104,30 @@ Response 200: { id, email, username }
 POST /auth/verify-email/
 Body: { token }
 Response 200: { access, refresh }
+```
+
+### Resend verification email
+
+```
+POST /auth/resend-verification/
+Body: { email }
+Response 200: { message }
+```
+
+### Request password reset
+
+```
+POST /auth/request-password-reset/
+Body: { email }
+Response 200: { message }
+```
+
+### Reset password
+
+```
+POST /auth/reset-password/
+Body: { email, token, new_password }
+Response 200: { id, email }
 ```
 
 ### Link Spotify account
