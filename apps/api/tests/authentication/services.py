@@ -8,7 +8,12 @@ from django.utils import timezone
 
 from authentication.email import send_password_reset_email
 from authentication.exceptions import UserConflictError, WeakPasswordError
-from authentication.models import BlacklistedRefreshToken, EmailVerificationToken, PasswordChangeLog
+from authentication.models import (
+    BlacklistedRefreshToken,
+    EmailVerificationToken,
+    PasswordChangeLog,
+    PasswordResetToken,
+)
 from authentication.services import (
     blacklist_refresh_token,
     create_user,
@@ -95,6 +100,20 @@ def test_create_user_rejects_weak_password():
         )
 
     assert User.objects.count() == 0
+
+
+@patch("authentication.email.send_mail")
+def test_create_user_persists_even_if_verification_email_fails(mock_send_mail):
+    mock_send_mail.side_effect = Exception("SMTP down")
+
+    user = create_user(
+        username="marc",
+        email="marc@test.com",
+        password="Str0ng-Passw0rd!",
+    )
+
+    assert user.username == "marc"
+    assert User.objects.count() == 1
 
 
 def test_login_user_returns_none_if_email_does_not_exist():
@@ -340,6 +359,21 @@ def test_verify_email_user_returns_none_if_token_does_not_exist():
     assert verify_email_user("000000") is None
 
 
+def test_verify_email_user_returns_none_for_password_reset_token():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert verify_email_user(token_obj.token) is None
+
+
 def test_verify_email_user_returns_none_if_token_already_used():
     user = User.objects.create_user(
         username="marc",
@@ -385,7 +419,7 @@ def test_reset_password_sets_new_password_and_marks_token_used():
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -407,6 +441,25 @@ def test_reset_password_returns_false_if_token_does_not_exist():
     assert reset_password("000000", "marc@test.com", "new-password") is False
 
 
+def test_reset_password_returns_false_for_email_verification_token():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert reset_password(token_obj.token, user.email, "new-password") is False
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+
 def test_reset_password_returns_false_if_token_already_used():
     user = User.objects.create_user(
         username="marc",
@@ -414,7 +467,7 @@ def test_reset_password_returns_false_if_token_already_used():
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         used=True,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
@@ -430,7 +483,7 @@ def test_reset_password_returns_false_if_token_is_expired():
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1),
     )
@@ -445,7 +498,7 @@ def test_reset_password_returns_false_if_email_does_not_match_token_owner():
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -466,7 +519,7 @@ def test_reset_password_creates_password_change_log():
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -485,7 +538,7 @@ def test_reset_password_rejects_weak_password():
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -515,6 +568,22 @@ def test_send_password_reset_email_creates_token_and_sends_email():
     assert token_obj.user == user
     assert len(mail.outbox) == 1
     assert mail.outbox[0].to == ["marc@test.com"]
+
+
+@patch("authentication.email.send_mail")
+def test_send_password_reset_email_persists_token_even_if_send_fails(mock_send_mail):
+    mock_send_mail.side_effect = Exception("SMTP down")
+
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = send_password_reset_email(user)
+
+    assert token_obj.user == user
+    assert PasswordResetToken.objects.filter(id=token_obj.id).exists()
 
 
 # resend_verification_email tests

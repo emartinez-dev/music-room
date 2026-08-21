@@ -13,7 +13,12 @@ from google.oauth2 import id_token
 
 from authentication.email import send_verification_email
 from authentication.exceptions import UserConflictError, WeakPasswordError
-from authentication.models import BlacklistedRefreshToken, EmailVerificationToken, PasswordChangeLog
+from authentication.models import (
+    BlacklistedRefreshToken,
+    EmailVerificationToken,
+    PasswordChangeLog,
+    PasswordResetToken,
+)
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 
@@ -203,8 +208,8 @@ def reset_password(token_uuid: str, email: str, new_password: str) -> bool:
     """Uses the token to reset the user's password if it's valid"""
 
     try:
-        token_obj = EmailVerificationToken.objects.select_related("user").get(token=token_uuid)
-    except EmailVerificationToken.DoesNotExist:
+        token_obj = PasswordResetToken.objects.select_related("user").get(token=token_uuid)
+    except PasswordResetToken.DoesNotExist:
         return False
 
     if token_obj.used or token_obj.expires_at < timezone.now():

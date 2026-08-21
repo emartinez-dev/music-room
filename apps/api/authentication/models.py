@@ -24,12 +24,7 @@ class BlacklistedRefreshToken(models.Model):
         return self.refresh_token[:20]
 
 
-class EmailVerificationToken(models.Model):
-    user = models.ForeignKey(
-        "auth.User",
-        on_delete=models.CASCADE,
-        related_name="email_verification_tokens",
-    )
+class BaseSingleUseToken(models.Model):
     token = models.CharField(
         max_length=64,
         default=generate_verification_token,
@@ -39,8 +34,30 @@ class EmailVerificationToken(models.Model):
     expires_at = models.DateTimeField()
     used = models.BooleanField(default=False)
 
+    class Meta:
+        abstract = True
+
+
+class EmailVerificationToken(BaseSingleUseToken):
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="email_verification_tokens",
+    )
+
     def __str__(self):
         return f"Verification for {self.user.email} ({'used' if self.used else 'unused'})"
+
+
+class PasswordResetToken(BaseSingleUseToken):
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+    )
+
+    def __str__(self):
+        return f"Password reset for {self.user.email} ({'used' if self.used else 'unused'})"
 
 
 class PasswordChangeLog(models.Model):

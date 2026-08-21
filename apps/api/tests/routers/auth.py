@@ -6,7 +6,11 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.test import Client
 
-from authentication.models import BlacklistedRefreshToken, EmailVerificationToken
+from authentication.models import (
+    BlacklistedRefreshToken,
+    EmailVerificationToken,
+    PasswordResetToken,
+)
 from authentication.utils import create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
@@ -526,7 +530,7 @@ def test_reset_password_success(client):
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -561,7 +565,7 @@ def test_reset_password_weak_password(client):
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -614,7 +618,7 @@ def test_reset_password_email_does_not_match_token_owner(client):
         password="old-password",
     )
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
@@ -659,7 +663,7 @@ def test_reset_password_invalidates_previously_issued_access_token(client):
     )
     assert me_response.status_code == 200
 
-    token_obj = EmailVerificationToken.objects.create(
+    token_obj = PasswordResetToken.objects.create(
         user=user,
         expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
     )
