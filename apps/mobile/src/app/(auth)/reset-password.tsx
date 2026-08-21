@@ -11,6 +11,9 @@ export default function ResetScreen() {
 
   const [email, setEmail] = useState(emailParam ?? "");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [requested, setRequested] = useState(false);
 
@@ -34,6 +37,11 @@ export default function ResetScreen() {
   };
 
   const handleResetPassword = async () => {
+    if (newPassword !== confirmPassword) {
+      showSnackbar("Passwords do not match");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await Api.post("/auth/reset-password/", {
@@ -43,6 +51,7 @@ export default function ResetScreen() {
       });
 
       showSnackbar("Password reset successful. Please log in.");
+      router.dismissAll();
       router.replace("/(auth)/login");
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -63,9 +72,30 @@ export default function ResetScreen() {
           value={newPassword}
           onChangeText={setNewPassword}
           mode="outlined"
-          secureTextEntry
+          secureTextEntry={!showPassword}
           autoComplete="new-password"
           left={<TextInput.Icon icon="lock" />}
+          right={
+            <TextInput.Icon
+              icon={showPassword ? "eye-off" : "eye"}
+              onPress={() => setShowPassword(!showPassword)}
+            />
+          }
+        />
+        <TextInput
+          label="Confirm new password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          mode="outlined"
+          secureTextEntry={!showConfirmPassword}
+          autoComplete="new-password"
+          left={<TextInput.Icon icon="lock-check" />}
+          right={
+            <TextInput.Icon
+              icon={showConfirmPassword ? "eye-off" : "eye"}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            />
+          }
         />
         <Button mode="contained" onPress={handleResetPassword} disabled={isLoading}>
           Reset password

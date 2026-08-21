@@ -3,12 +3,15 @@ import { AxiosError } from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
-import ResetScreen from "../reset";
+import ResetScreen from "../reset-password";
 
 jest.mock("expo-router", () => ({
   router: {
     replace: jest.fn(),
     push: jest.fn(),
+    dismissAll: jest.fn(),
+    canGoBack: jest.fn(),
+    back: jest.fn(),
   },
   useLocalSearchParams: jest.fn(),
 }));
@@ -27,6 +30,7 @@ const mockedUseSnackbar = useSnackbar as jest.Mock;
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.Mock;
 const mockedApi = Api as { post: jest.Mock };
 const mockedRouterReplace = router.replace as jest.Mock;
+const mockedRouterDismissAll = router.dismissAll as jest.Mock;
 
 describe("ResetScreen", () => {
   const showSnackbar = jest.fn();
@@ -127,12 +131,27 @@ describe("ResetScreen", () => {
       });
     });
 
-    it("should render only the new password input", async () => {
+    it("should render the new password and confirm password inputs", async () => {
       await render(<ResetScreen />);
 
       expect(screen.getByLabelText("New password")).toBeTruthy();
+      expect(screen.getByLabelText("Confirm new password")).toBeTruthy();
       expect(screen.getByText("Reset password")).toBeTruthy();
       expect(screen.queryByLabelText("Email")).toBeNull();
+    });
+
+    it("should show a snackbar and not submit when passwords do not match", async () => {
+      await render(<ResetScreen />);
+
+      await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "different");
+      await fireEvent.press(screen.getByText("Reset password"));
+
+      await waitFor(() => {
+        expect(showSnackbar).toHaveBeenCalledWith("Passwords do not match");
+      });
+
+      expect(mockedApi.post).not.toHaveBeenCalled();
     });
 
     it("should reset password and navigate to login on success", async () => {
@@ -141,6 +160,7 @@ describe("ResetScreen", () => {
       await render(<ResetScreen />);
 
       await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "new-password");
       await fireEvent.press(screen.getByText("Reset password"));
 
       await waitFor(() => {
@@ -156,6 +176,7 @@ describe("ResetScreen", () => {
       });
 
       await waitFor(() => {
+        expect(mockedRouterDismissAll).toHaveBeenCalled();
         expect(mockedRouterReplace).toHaveBeenCalledWith("/(auth)/login");
       });
     });
@@ -166,6 +187,7 @@ describe("ResetScreen", () => {
       await render(<ResetScreen />);
 
       await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "new-password");
 
       await act(async () => {
         fireEvent.press(screen.getByText("Reset password"));
@@ -190,6 +212,7 @@ describe("ResetScreen", () => {
       await render(<ResetScreen />);
 
       await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "new-password");
       await fireEvent.press(screen.getByText("Reset password"));
 
       await waitFor(() => {
@@ -203,6 +226,7 @@ describe("ResetScreen", () => {
       await render(<ResetScreen />);
 
       await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "new-password");
       await fireEvent.press(screen.getByText("Reset password"));
 
       await waitFor(() => {
