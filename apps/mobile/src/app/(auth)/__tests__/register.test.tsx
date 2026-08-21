@@ -13,6 +13,10 @@ jest.mock("@/context/AuthContext", () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock("@/services/googleAuth", () => ({
+  handleGoogleSignIn: jest.fn(),
+}));
+
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedRouterPush = router.push as jest.Mock;
 

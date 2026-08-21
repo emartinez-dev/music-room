@@ -4,9 +4,10 @@ import { Text, View } from "react-native";
 import { Button, Divider, TextInput } from "react-native-paper";
 
 import { useAuth } from "@/context/AuthContext";
+import { handleGoogleSignIn } from "@/services/googleAuth";
 
 export default function RegisterScreen() {
-  const { register, isLoading } = useAuth();
+  const { register, loginWithGoogle, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -80,7 +81,18 @@ export default function RegisterScreen() {
         Create account
       </Button>
       <Divider bold />
-      <Button mode="outlined" icon={"google"} onPress={() => {}}>
+      <Button
+        mode="outlined"
+        icon={"google"}
+        onPress={async () => {
+          try {
+            const tokens = await handleGoogleSignIn();
+            await loginWithGoogle(tokens);
+          } catch (error) {
+            console.error("Google login failed:", error);
+          }
+        }}
+      >
         Continue with Google
       </Button>
       <View className="flex flex-row justify-center items-center">
