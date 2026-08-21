@@ -9,15 +9,19 @@ import { Api } from "@/services/api";
 import { resendVerificationApi } from "@/services/auth";
 import { saveTokens } from "@/services/secureStore";
 
+// Guards against Android redelivering the link's Intent and remounting with a stale token
+const processedTokens = new Set<string>();
+
 export default function VerifyEmailScreen() {
   const { token, email } = useLocalSearchParams<{ token?: string; email?: string }>();
-  const [isLoading, setIsLoading] = useState(!!token);
+  const [isLoading, setIsLoading] = useState(!!token && !processedTokens.has(token));
   const [isResending, setIsResending] = useState(false);
   const { checkAuth, me } = useAuth();
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || processedTokens.has(token)) return;
+    processedTokens.add(token);
 
     const verify = async () => {
       try {

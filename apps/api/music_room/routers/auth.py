@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from ninja import Router
 
 from authentication.auth import JWTAuth
+from authentication.email import send_password_reset_email
 from authentication.schemas import (
     ErrorSchema,
     GoogleLoginResponse,
@@ -32,7 +33,6 @@ from authentication.services import (
     refresh_access_token,
     resend_verification_email,
     reset_password,
-    send_password_reset_email,
     verify_email_user,
 )
 
@@ -81,19 +81,12 @@ def verify_email_with_body(request, data: VerifyEmailSchema):
     "/resend-verification/",
     response={
         200: ResendVerificationResponse,
-        404: ErrorSchema,
     },
 )
 def resend_verification(request, data: ResendVerificationSchema):
-    user = resend_verification_email(data.email)
+    resend_verification_email(data.email)
 
-    if not user:
-        return 404, {
-            "code": "not_found",
-            "message": "User with this email does not exist or is already verified",
-        }
-
-    return 200, {"id": str(user.id), "email": user.email}
+    return 200, {"message": "If an account exists for this email, a verification link has been sent."}
 
 
 # /auth/request-password-reset/
@@ -101,21 +94,15 @@ def resend_verification(request, data: ResendVerificationSchema):
     "/request-password-reset/",
     response={
         200: RequestPasswordResetResponse,
-        404: ErrorSchema,
     },
 )
 def request_password_reset(request, data: RequestPasswordResetSchema):
     user = User.objects.filter(email=data.email).first()
 
-    if not user:
-        return 404, {
-            "code": "not_found",
-            "message": "User with this email does not exist",
-        }
+    if user:
+        send_password_reset_email(user)
 
-    send_password_reset_email(user)
-
-    return 200, {"id": str(user.id), "email": user.email}
+    return 200, {"message": "If an account exists for this email, a reset link has been sent."}
 
 
 # /auth/reset-password/

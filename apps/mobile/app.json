@@ -36,6 +36,11 @@
               "scheme": "https",
               "host": "musicroom-verify-links.vercel.app",
               "pathPrefix": "/verify-email"
+            },
+            {
+              "scheme": "https",
+              "host": "musicroom-verify-links.vercel.app",
+              "pathPrefix": "/reset-password"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]

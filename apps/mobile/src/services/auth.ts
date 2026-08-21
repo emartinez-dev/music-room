@@ -5,7 +5,7 @@ type MeResponse = { id: string; email: string; username: string };
 type GoogleLoginResponse = { access: string; refresh: string; user: { id: string; email: string } };
 type RegisterResponse = { id: string; email: string };
 type RefreshResponse = { access: string };
-type ResendVerificationResponse = { id: string; email: string };
+type ResendVerificationResponse = { message: string };
 
 export async function loginApi(email: string, password: string): Promise<LoginResponse> {
   const { data } = await Api.post("/auth/login", { email, password });

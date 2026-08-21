@@ -1,4 +1,5 @@
 import { AxiosError } from "axios";
+import { router } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTokens();
       setUser(null);
       setIsAuthenticated(false);
+      router.replace("/(auth)/login");
     }
   }, [showSnackbar]);
 

@@ -98,8 +98,7 @@ class RequestPasswordResetSchema(Schema):
 
 
 class RequestPasswordResetResponse(Schema):
-    id: str
-    email: str
+    message: str
 
 
 # --- /auth/reset-password/ ---
@@ -124,5 +123,4 @@ class ResendVerificationSchema(Schema):
 
 
 class ResendVerificationResponse(Schema):
-    id: str
-    email: str
+    message: str

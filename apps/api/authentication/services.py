@@ -171,12 +171,6 @@ def login_with_google(id_token_string: str):
     }
 
 
-def send_password_reset_email(user):
-    """Generates a verification token and sends a password reset email to the user"""
-
-    return send_verification_email(user)
-
-
 def resend_verification_email(email: str):
     """Resends the email verification token, or returns None if not eligible."""
     # TODO: rate-limit with Redis
