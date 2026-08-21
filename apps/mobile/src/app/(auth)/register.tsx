@@ -48,6 +48,7 @@ export default function RegisterScreen() {
         left={<TextInput.Icon icon="email" />}
       />
       <TextInput
+        key={`password-${showPassword ? "visible" : "hidden"}`}
         label="Password"
         value={password}
         onChangeText={setPassword}
@@ -63,6 +64,7 @@ export default function RegisterScreen() {
         }
       />
       <TextInput
+        key={`confirm-password-${showConfirmPassword ? "visible" : "hidden"}`}
         label="Confirm Password"
         value={confirmPassword}
         onChangeText={setConfirmPassword}

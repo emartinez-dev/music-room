@@ -13,6 +13,7 @@ type User = { id: string; email: string };
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
+  isCheckingAuth: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const { showSnackbar } = useSnackbar();
@@ -141,10 +143,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAccessToken = async () => {
-      const access = await getAccessToken();
+      try {
+        const access = await getAccessToken();
 
-      if (access) {
-        setIsAuthenticated(true);
+        if (access) {
+          setIsAuthenticated(true);
+        }
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
 
@@ -160,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
+        isCheckingAuth,
         isAuthenticated,
         login,
         loginWithGoogle,

@@ -22,9 +22,9 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isCheckingAuth } = useAuth();
 
-  if (isLoading) return null;
+  if (isCheckingAuth) return null;
   return (
     <Stack>
       <Stack.Protected guard={isAuthenticated}>

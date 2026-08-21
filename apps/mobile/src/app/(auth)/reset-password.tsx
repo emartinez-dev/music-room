@@ -68,6 +68,7 @@ export default function ResetScreen() {
     return (
       <View className="flex m-4 gap-2">
         <TextInput
+          key={`password-${showPassword ? "visible" : "hidden"}`}
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
@@ -83,6 +84,7 @@ export default function ResetScreen() {
           }
         />
         <TextInput
+          key={`confirm-password-${showConfirmPassword ? "visible" : "hidden"}`}
           label="Confirm new password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
