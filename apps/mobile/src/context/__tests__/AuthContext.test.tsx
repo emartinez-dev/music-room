@@ -1,10 +1,16 @@
 import { act, renderHook } from "@testing-library/react-native";
+import { router } from "expo-router";
 import type { ReactNode } from "react";
-
-import { AuthProvider, useAuth } from "../AuthContext";
 import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
+import { AuthProvider, useAuth } from "../AuthContext";
+
+jest.mock("expo-router", () => ({
+  router: {
+    replace: jest.fn(),
+  },
+}));
 
 jest.mock("@/services/auth", () => ({
   loginApi: jest.fn(),
@@ -211,6 +217,18 @@ describe("AuthContext", () => {
 
       expect(mockedLogoutApi).not.toHaveBeenCalled();
       expect(mockedClearTokens).toHaveBeenCalled();
+    });
+
+    it("should navigate to the login screen", async () => {
+      mockedGetRefreshToken.mockResolvedValue(null);
+
+      const { result } = await renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      expect(router.replace).toHaveBeenCalledWith("/(auth)/login");
     });
   });
 });

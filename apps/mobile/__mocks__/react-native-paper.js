@@ -41,7 +41,7 @@ function MockTextInput(props) {
     "style",
   ];
   for (var key in props) {
-    if (props.hasOwnProperty(key) && safeKeys.indexOf(key) !== -1) {
+    if (Object.hasOwn(props, key) && safeKeys.indexOf(key) !== -1) {
       rest[key] = props[key];
     }
   }
@@ -77,7 +77,7 @@ function MockButton(props) {
   ];
   var rest = {};
   for (var key in props) {
-    if (props.hasOwnProperty(key) && safeKeys.indexOf(key) !== -1) {
+    if (Object.hasOwn(props, key) && safeKeys.indexOf(key) !== -1) {
       rest[key] = props[key];
     }
   }
@@ -108,11 +108,27 @@ function MockSnackbar(props) {
   return React.createElement(RN.View, null, props.children);
 }
 
+// ── Text ───────────────────────────────────────────────────────────────────
+function MockText(props) {
+  var React = require("react");
+  var RN = require("react-native");
+  return React.createElement(RN.Text, props, props.children);
+}
+
+// ── ActivityIndicator ────────────────────────────────────────────────────────
+function MockActivityIndicator(props) {
+  var React = require("react");
+  var RN = require("react-native");
+  return React.createElement(RN.ActivityIndicator, props);
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 module.exports = {
   TextInput: MockTextInput,
   Button: MockButton,
   Divider: MockDivider,
   Snackbar: MockSnackbar,
+  Text: MockText,
+  ActivityIndicator: MockActivityIndicator,
 };
 module.exports.default = module.exports;

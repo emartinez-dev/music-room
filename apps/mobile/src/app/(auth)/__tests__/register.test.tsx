@@ -1,8 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-
-import RegisterScreen from "../register";
 import { useAuth } from "@/context/AuthContext";
+import RegisterScreen from "../register";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -64,7 +63,10 @@ describe("RegisterScreen", () => {
     await fireEvent.press(screen.getByText("Create account"));
 
     await waitFor(() => {
-      expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/verify-email");
+      expect(mockedRouterPush).toHaveBeenCalledWith({
+        pathname: "/(auth)/verify-email",
+        params: { email: "user@example.com" },
+      });
     });
   });
 

@@ -46,7 +46,9 @@ def send_password_reset_email(user):
     expires_at = timezone.now() + datetime.timedelta(hours=2)
     token_obj = EmailVerificationToken.objects.create(user=user, expires_at=expires_at)
 
-    reset_url = f"{settings.EMAIL_VERIFY_URL}/reset-password?token={token_obj.token}&email={user.email}"
+    reset_url = (
+        f"{settings.EMAIL_VERIFY_URL}/reset-password?token={token_obj.token}&email={user.email}"
+    )
 
     send_mail(
         subject="Reset your password for Music Room",

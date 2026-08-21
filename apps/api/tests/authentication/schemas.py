@@ -9,8 +9,16 @@ from authentication.schemas import (
     LoginResponse,
     LoginSchema,
     LogoutSchema,
+    PasswordResetResponse,
+    PasswordResetSchema,
     RegisterResponse,
     RegisterSchema,
+    RequestPasswordResetResponse,
+    RequestPasswordResetSchema,
+    ResendVerificationResponse,
+    ResendVerificationSchema,
+    VerifyEmailResponse,
+    VerifyEmailSchema,
 )
 
 
@@ -119,3 +127,64 @@ def test_google_login_response():
     assert response.refresh == "refresh-token"
     assert response.user.id == "1"
     assert response.user.email == "marc@test.com"
+
+
+def test_verify_email_schema():
+    schema = VerifyEmailSchema(token="the-token")
+
+    assert schema.token == "the-token"
+
+
+def test_verify_email_response():
+    response = VerifyEmailResponse(access="access-token", refresh="refresh-token")
+
+    assert response.access == "access-token"
+    assert response.refresh == "refresh-token"
+
+
+def test_request_password_reset_schema():
+    schema = RequestPasswordResetSchema(email="marc@test.com")
+
+    assert schema.email == "marc@test.com"
+
+
+def test_request_password_reset_response():
+    response = RequestPasswordResetResponse(message="If an account exists...")
+
+    assert response.message == "If an account exists..."
+
+
+def test_password_reset_schema():
+    schema = PasswordResetSchema(
+        email="marc@test.com",
+        token="the-token",
+        new_password="new-password",
+    )
+
+    assert schema.email == "marc@test.com"
+    assert schema.token == "the-token"
+    assert schema.new_password == "new-password"
+
+
+def test_password_reset_schema_requires_all_fields():
+    with pytest.raises(ValidationError):
+        PasswordResetSchema(email="marc@test.com", token="the-token")
+
+
+def test_password_reset_response():
+    response = PasswordResetResponse(id="1", email="marc@test.com")
+
+    assert response.id == "1"
+    assert response.email == "marc@test.com"
+
+
+def test_resend_verification_schema():
+    schema = ResendVerificationSchema(email="marc@test.com")
+
+    assert schema.email == "marc@test.com"
+
+
+def test_resend_verification_response():
+    response = ResendVerificationResponse(message="If an account exists...")
+
+    assert response.message == "If an account exists..."

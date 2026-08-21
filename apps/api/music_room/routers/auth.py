@@ -86,7 +86,9 @@ def verify_email_with_body(request, data: VerifyEmailSchema):
 def resend_verification(request, data: ResendVerificationSchema):
     resend_verification_email(data.email)
 
-    return 200, {"message": "If an account exists for this email, a verification link has been sent."}
+    return 200, {
+        "message": "If an account exists for this email, a verification link has been sent."
+    }
 
 
 # /auth/request-password-reset/
