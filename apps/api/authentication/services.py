@@ -102,10 +102,13 @@ def blacklist_refresh_token(refresh_token: str):
         tz=datetime.UTC,
     )
 
-    BlacklistedRefreshToken.objects.create(
-        refresh_token=refresh_token,
-        expires_at=expires_at,
-    )
+    try:
+        BlacklistedRefreshToken.objects.create(
+            refresh_token=refresh_token,
+            expires_at=expires_at,
+        )
+    except IntegrityError:
+        pass
 
 
 def refresh_access_token(refresh_token: str):

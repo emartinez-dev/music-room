@@ -45,4 +45,3 @@ export async function resendVerificationApi(email: string): Promise<ResendVerifi
   const { data } = await Api.post("/auth/resend-verification/", { email });
   return data;
 }
-

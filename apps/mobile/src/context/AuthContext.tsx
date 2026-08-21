@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
 
     try {
-      saveTokens(tokens.access, tokens.refresh);
+      await saveTokens(tokens.access, tokens.refresh);
 
       setUser(tokens.user);
       setIsAuthenticated(true);
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         showSnackbar("Logout failed");
       }
     } finally {
-      clearTokens();
+      await clearTokens();
       setUser(null);
       setIsAuthenticated(false);
       router.replace("/(auth)/login");
