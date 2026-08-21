@@ -23,7 +23,7 @@ def test_register_success(client):
         data={
             "username": "marc",
             "email": "marc@test.com",
-            "password": "password123",
+            "password": "Str0ng-Passw0rd!",
         },
         content_type="application/json",
     )
@@ -34,6 +34,22 @@ def test_register_success(client):
 
     assert body["email"] == "marc@test.com"
     assert "id" in body
+
+
+def test_register_weak_password(client):
+    response = client.post(
+        "/api/auth/register",
+        data={
+            "username": "marc",
+            "email": "marc@test.com",
+            "password": "password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+    assert User.objects.count() == 0
 
 
 def test_register_existing_email(client):
@@ -268,7 +284,7 @@ def test_token(client):
         data={
             "username": "marc",
             "email": "marc@test.com",
-            "password": "password123",
+            "password": "Str0ng-Passw0rd!",
         },
         content_type="application/json",
     )
@@ -288,7 +304,7 @@ def test_token(client):
         "/api/auth/login",
         data={
             "email": "marc@test.com",
-            "password": "password123",
+            "password": "Str0ng-Passw0rd!",
         },
         content_type="application/json",
     )
@@ -536,6 +552,35 @@ def test_reset_password_success(client):
 
     token_obj.refresh_from_db()
     assert token_obj.used is True
+
+
+def test_reset_password_weak_password(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": token_obj.token,
+            "new_password": "password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
 
 
 def test_reset_password_invalid_token(client):

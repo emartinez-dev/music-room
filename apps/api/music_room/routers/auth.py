@@ -41,7 +41,7 @@ jwt_auth = JWTAuth()
 
 
 # /auth/register
-@auth_router.post("/register", response={201: RegisterResponse, 409: ErrorSchema})
+@auth_router.post("/register", response={201: RegisterResponse, 409: ErrorSchema, 400: ErrorSchema})
 def register(request, data: RegisterSchema):
 
     user = create_user(

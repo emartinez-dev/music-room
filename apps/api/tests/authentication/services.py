@@ -7,7 +7,7 @@ from django.core import mail
 from django.utils import timezone
 
 from authentication.email import send_password_reset_email
-from authentication.exceptions import UserConflictError
+from authentication.exceptions import UserConflictError, WeakPasswordError
 from authentication.models import BlacklistedRefreshToken, EmailVerificationToken, PasswordChangeLog
 from authentication.services import (
     blacklist_refresh_token,
@@ -28,7 +28,7 @@ def test_create_user():
     user = create_user(
         username="marc",
         email="marc@test.com",
-        password="password123",
+        password="Str0ng-Passw0rd!",
     )
 
     assert user.username == "marc"
@@ -71,7 +71,7 @@ def test_create_user_returns_existing_user_if_unverified():
     existing = create_user(
         username="marc",
         email="marc@test.com",
-        password="password123",
+        password="Str0ng-Passw0rd!",
     )
     assert existing.is_active is False
 
@@ -84,6 +84,17 @@ def test_create_user_returns_existing_user_if_unverified():
     assert result.id == existing.id
     assert result.username == "marc"
     assert User.objects.count() == 1
+
+
+def test_create_user_rejects_weak_password():
+    with pytest.raises(WeakPasswordError):
+        create_user(
+            username="marc",
+            email="marc@test.com",
+            password="password",
+        )
+
+    assert User.objects.count() == 0
 
 
 def test_login_user_returns_none_if_email_does_not_exist():
@@ -465,6 +476,28 @@ def test_reset_password_creates_password_change_log():
 
     log = PasswordChangeLog.objects.get(user=user)
     assert log.changed_at >= before
+
+
+def test_reset_password_rejects_weak_password():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    with pytest.raises(WeakPasswordError):
+        reset_password(token_obj.token, user.email, "password")
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+    token_obj.refresh_from_db()
+    assert token_obj.used is False
 
 
 # send_password_reset_email tests

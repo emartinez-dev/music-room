@@ -4,13 +4,15 @@ import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
 from authentication.email import send_verification_email
-from authentication.exceptions import UserConflictError
+from authentication.exceptions import UserConflictError, WeakPasswordError
 from authentication.models import BlacklistedRefreshToken, EmailVerificationToken, PasswordChangeLog
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
@@ -47,6 +49,11 @@ def create_user(username: str, email: str, password: str):
         if not existing_user.is_active:
             return existing_user
         raise UserConflictError()
+
+    try:
+        validate_password(password, user=User(username=username, email=email))
+    except DjangoValidationError as exc:
+        raise WeakPasswordError(exc.messages[0]) from exc
 
     with transaction.atomic():
         try:
@@ -207,6 +214,12 @@ def reset_password(token_uuid: str, email: str, new_password: str) -> bool:
         return False
 
     user = token_obj.user
+
+    try:
+        validate_password(new_password, user=user)
+    except DjangoValidationError as exc:
+        raise WeakPasswordError(exc.messages[0]) from exc
+
     user.set_password(new_password)
     user.save()
 
