@@ -19,7 +19,7 @@ from authentication.services import (
     reset_password,
     verify_email_user,
 )
-from authentication.utils import create_refresh_token
+from authentication.utils import create_access_token, create_refresh_token
 
 pytestmark = pytest.mark.django_db
 
@@ -172,6 +172,13 @@ def test_refresh_access_token_allows_token_issued_after_password_change():
     assert "access" in result
 
 
+def test_refresh_access_token_rejects_an_access_token():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    access_token = create_access_token(user.id)
+
+    assert refresh_access_token(access_token) is None
+
+
 # Google OAuth2 login tests with @patch mocks
 
 
@@ -268,6 +275,24 @@ def test_login_with_google_returns_none_if_email_verified_is_missing(mock_verify
     }
 
     assert login_with_google("google-token") is None
+
+
+@patch("authentication.services.id_token.verify_oauth2_token")
+def test_login_with_google_returns_none_for_unverified_existing_user(mock_verify):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    mock_verify.return_value = {
+        "sub": "google-sub-123",
+        "email": "marc@test.com",
+        "email_verified": True,
+    }
+
+    assert login_with_google("valid-google-token") is None
 
 
 # verify_email_user tests

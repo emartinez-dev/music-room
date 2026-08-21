@@ -20,6 +20,9 @@ class JWTAuth(HttpBearer):
         except User.DoesNotExist:
             return None
 
+        if payload.get("type") != "access":
+            return None
+
         try:
             changed_at = user.password_change_log.changed_at
         except PasswordChangeLog.DoesNotExist:

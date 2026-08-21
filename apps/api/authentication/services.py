@@ -109,11 +109,14 @@ def blacklist_refresh_token(refresh_token: str):
 
 
 def refresh_access_token(refresh_token: str):
-    """Creates a new access token or returns None if the refresh token is invalid, blacklisted, or stale."""
+    """Creates a new access token or returns None if the refresh token is invalid, blacklisted, stale, or not a refresh token."""
 
     try:
         payload = decode_token(refresh_token)
     except jwt.InvalidTokenError:
+        return None
+
+    if payload.get("type") != "refresh":
         return None
 
     if BlacklistedRefreshToken.objects.filter(
@@ -154,6 +157,9 @@ def login_with_google(id_token_string: str):
         return None
 
     user = User.objects.filter(email=email).first()
+
+    if user and not user.is_active:
+        return None
 
     if not user:
         user = User.objects.create_user(

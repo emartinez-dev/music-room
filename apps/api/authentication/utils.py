@@ -7,6 +7,7 @@ from django.conf import settings
 def create_access_token(user_id: int) -> str:
     payload = {
         "user_id": user_id,
+        "type": "access",
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30),
         "iat": datetime.datetime.now(datetime.UTC),
     }
@@ -16,6 +17,7 @@ def create_access_token(user_id: int) -> str:
 def create_refresh_token(user_id: int) -> str:
     payload = {
         "user_id": user_id,
+        "type": "refresh",
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=7),
         "iat": datetime.datetime.now(datetime.UTC),
     }

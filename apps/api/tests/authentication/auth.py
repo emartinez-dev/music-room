@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 
 from authentication.auth import JWTAuth
 from authentication.models import PasswordChangeLog
-from authentication.utils import create_access_token
+from authentication.utils import create_access_token, create_refresh_token
 
 pytestmark = pytest.mark.django_db
 
@@ -25,6 +25,13 @@ def test_authenticate_returns_none_if_user_does_not_exist():
     token = create_access_token(999999)
 
     assert JWTAuth().authenticate(None, token) is None
+
+
+def test_authenticate_rejects_a_refresh_token():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    refresh_token = create_refresh_token(user.id)
+
+    assert JWTAuth().authenticate(None, refresh_token) is None
 
 
 def test_authenticate_allows_token_when_no_password_change_log_exists():
