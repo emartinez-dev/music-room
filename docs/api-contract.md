@@ -95,7 +95,7 @@ Response 200: { access, refresh, user: { id, email } }
 ```
 GET /auth/me
 Headers: Authorization: Bearer <access_token>
-Response 200: { id, email, username }
+Response 200: { id, email, username, spotify_linked }
 ```
 
 ### Verify email

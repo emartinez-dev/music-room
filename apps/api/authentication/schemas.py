@@ -69,6 +69,14 @@ class GoogleUserResponse(Schema):
     email: str
 
 
+# --- /auth/spotify/ ---
+
+
+class SpotifyLinkSchema(Schema):
+    code: str
+    state: str
+
+
 # --- /auth/me/ ---
 
 
@@ -76,6 +84,7 @@ class MeResponse(Schema):
     id: str
     email: str
     username: str
+    spotify_linked: bool
 
 
 # --- /auth/verify-email/ ---

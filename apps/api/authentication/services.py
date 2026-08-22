@@ -1,6 +1,8 @@
+import base64
 import datetime
 
 import jwt
+import requests as http_requests
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -18,6 +20,7 @@ from authentication.models import (
     EmailVerificationToken,
     PasswordChangeLog,
     PasswordResetToken,
+    SpotifyCredential,
 )
 from authentication.utils import create_access_token, create_refresh_token, decode_token
 
@@ -190,6 +193,45 @@ def login_with_google(id_token_string: str):
             "email": user.email,
         },
     }
+
+
+def link_spotify_account(user: User, code: str) -> bool:
+    """Exchanges a Spotify authorization code for tokens and links them to the user, or returns False if the code is invalid."""
+
+    basic_auth = base64.b64encode(
+        f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}".encode()
+    ).decode()
+
+    response = http_requests.post(
+        "https://accounts.spotify.com/api/token",
+        data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": settings.SPOTIFY_REDIRECT_URI,
+        },
+        headers={
+            "Authorization": f"Basic {basic_auth}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    )
+
+    if response.status_code != 200:
+        return False
+
+    payload = response.json()
+    expires_at = timezone.now() + datetime.timedelta(seconds=payload["expires_in"])
+
+    SpotifyCredential.objects.update_or_create(
+        user=user,
+        defaults={
+            "access_token": payload["access_token"],
+            "refresh_token": payload["refresh_token"],
+            "scope": payload.get("scope", ""),
+            "expires_at": expires_at,
+        },
+    )
+
+    return True
 
 
 def resend_verification_email(email: str):

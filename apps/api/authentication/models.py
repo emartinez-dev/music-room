@@ -70,3 +70,18 @@ class PasswordChangeLog(models.Model):
 
     def __str__(self):
         return f"Password change for {self.user.email} at {self.changed_at}"
+
+
+class SpotifyCredential(models.Model):
+    user = models.OneToOneField(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="spotify_credential",
+    )
+    access_token = models.TextField()
+    refresh_token = models.TextField()
+    scope = models.TextField()
+    expires_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"Spotify credential for {self.user.email}"

@@ -22,12 +22,14 @@ from authentication.schemas import (
     RequestPasswordResetSchema,
     ResendVerificationResponse,
     ResendVerificationSchema,
+    SpotifyLinkSchema,
     VerifyEmailResponse,
     VerifyEmailSchema,
 )
 from authentication.services import (
     blacklist_refresh_token,
     create_user,
+    link_spotify_account,
     login_user,
     login_with_google,
     refresh_access_token,
@@ -197,6 +199,27 @@ def refresh(request, data: RefreshSchema):
     return access
 
 
+# /auth/spotify
+@auth_router.post(
+    "/spotify",
+    response={
+        204: None,
+        400: ErrorSchema,
+    },
+    auth=jwt_auth,
+)
+def spotify_link(request, data: SpotifyLinkSchema):
+    linked = link_spotify_account(request.auth, data.code)
+
+    if not linked:
+        return 400, {
+            "code": "validation_error",
+            "message": "Invalid or expired Spotify authorization code",
+        }
+
+    return 204, None
+
+
 # /auth/me
 @auth_router.get("/me", response=MeResponse, auth=jwt_auth)
 def me(request):
@@ -212,4 +235,5 @@ def me(request):
         "id": str(user.id),
         "email": user.email,
         "username": user.username,
+        "spotify_linked": hasattr(user, "spotify_credential"),
     }

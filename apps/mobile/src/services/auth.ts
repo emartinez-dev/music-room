@@ -1,7 +1,7 @@
 import { Api } from "./api";
 
 type LoginResponse = { access: string; refresh: string };
-type MeResponse = { id: string; email: string; username: string };
+type MeResponse = { id: string; email: string; username: string; spotify_linked: boolean };
 type GoogleLoginResponse = { access: string; refresh: string; user: { id: string; email: string } };
 type RegisterResponse = { id: string; email: string };
 type RefreshResponse = { access: string };
@@ -43,5 +43,10 @@ export async function meApi(): Promise<MeResponse> {
 
 export async function resendVerificationApi(email: string): Promise<ResendVerificationResponse> {
   const { data } = await Api.post("/auth/resend-verification/", { email });
+  return data;
+}
+
+export async function spotifyLinkApi(code: string, state: string): Promise<null> {
+  const { data } = await Api.post("/auth/spotify", { code, state });
   return data;
 }

@@ -4,7 +4,7 @@ import { Button, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Index() {
-  const { user, logout, me } = useAuth();
+  const { user, logout, me, spotifyLinked, linkSpotify } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -12,6 +12,9 @@ export default function Index() {
       <Text style={styles.text}>Hi {user?.email}</Text>
       <Button title={"Log out"} onPress={() => logout()}></Button>
       <Button title={"Get User Info"} onPress={() => me()}></Button>
+      {!spotifyLinked && (
+        <Button title={"Link your Spotify account"} onPress={() => linkSpotify()}></Button>
+      )}
       <Link href="/about" style={styles.button}>
         Go to About screen
       </Link>

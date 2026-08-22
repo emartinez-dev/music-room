@@ -70,6 +70,12 @@ describe("AuthContext", () => {
 
     it("should set isAuthenticated to true if an access token exists", async () => {
       mockedGetAccessToken.mockResolvedValue("access-token");
+      mockedMeApi.mockResolvedValue({
+        id: "123",
+        email: "user@example.com",
+        username: "user",
+        spotify_linked: false,
+      });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
@@ -147,6 +153,13 @@ describe("AuthContext", () => {
 
   describe("loginWithGoogle", () => {
     it("should save tokens and set the user on success", async () => {
+      mockedMeApi.mockResolvedValue({
+        id: "google-1",
+        email: "google@example.com",
+        username: "google-1",
+        spotify_linked: true,
+      });
+
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
@@ -162,7 +175,10 @@ describe("AuthContext", () => {
       expect(result.current.user).toEqual({
         id: "google-1",
         email: "google@example.com",
+        username: "google-1",
+        spotify_linked: true,
       });
+      expect(result.current.spotifyLinked).toBe(true);
     });
   });
 
