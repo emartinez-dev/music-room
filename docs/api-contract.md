@@ -54,6 +54,8 @@ Common error codes:
 POST /auth/register
 Body: { username, email, password }
 Response 201: { id, email }
+Response 409: email already registered
+Response 400: password fails validation
 ```
 
 ### Login
@@ -62,6 +64,7 @@ Response 201: { id, email }
 POST /auth/login
 Body: { email, password }
 Response 200: { access, refresh }
+Response 401: invalid credentials
 ```
 
 ### Refresh token
@@ -70,6 +73,7 @@ Response 200: { access, refresh }
 POST /auth/refresh
 Body: { refresh }
 Response 200: { access }
+Response 401: invalid, blacklisted, or stale refresh token
 ```
 
 ### Logout
@@ -88,6 +92,7 @@ Response 204
 POST /auth/google
 Body: { id_token }   ← token from Google Sign-In on the mobile app
 Response 200: { access, refresh, user: { id, email } }
+Response 401: invalid Google token
 ```
 
 ### Get current user
@@ -136,6 +141,74 @@ Response 200: { id, email }
 
 ```
 POST /auth/spotify
+Headers: Authorization: Bearer <access_token>
 Body: { code, state }   ← OAuth code from Spotify
 Response 204
+Response 400: invalid or expired Spotify authorization code
+```
+
+## Tracks
+
+Any endpoint that calls the Spotify Web API on the user's behalf requires
+their account to be linked (`POST /auth/spotify`) and returns
+`403 { code: "forbidden", message: "Link your Spotify account to use this feature" }`
+otherwise. This is a permission issue, not a session issue — the mobile app's
+token-refresh interceptor only reacts to 401, so it will not retry or log the
+user out on this response.
+
+### Search tracks
+
+Searches Spotify's catalog and caches matches in the `Track` table.
+
+```
+GET /tracks/search?q=<query>
+Response 200: [ { spotify_uri, name, artist, album, duration_ms, image_url }, ... ]
+Response 403: Spotify account not linked
+```
+
+## Rooms
+
+### Create room
+
+```
+POST /rooms
+Body: { name }
+Response 200: { id, name, host_username }
+```
+
+### List rooms
+
+```
+GET /rooms
+Response 200: [ { id, name, host_username }, ... ]
+```
+
+### Get room detail
+
+Also registers the requesting user as a room member.
+
+```
+GET /rooms/{room_id}
+Response 200: { id, name, host_username, tracks: [ { spotify_uri, name, artist, image_url }, ... ] }
+Response 404: room does not exist
+```
+
+### Delete room
+
+Only the host can delete a room.
+
+```
+DELETE /rooms/{room_id}
+Response 204
+Response 403: not the host
+Response 404: room does not exist
+```
+
+### Add track to room
+
+```
+POST /rooms/{room_id}/tracks
+Body: { spotify_uri }
+Response 200: same shape as "Get room detail"
+Response 404: room or track does not exist
 ```

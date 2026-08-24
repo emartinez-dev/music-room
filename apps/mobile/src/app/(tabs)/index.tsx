@@ -1,19 +1,21 @@
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { Button, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
 
 export default function Index() {
-  const { user, logout, me, spotifyLinked, linkSpotify } = useAuth();
+  const { user, logout, spotifyLinked } = useAuth();
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Home screen</Text>
       <Text style={styles.text}>Hi {user?.email}</Text>
       <Button title={"Log out"} onPress={() => logout()}></Button>
-      <Button title={"Get User Info"} onPress={() => me()}></Button>
       {!spotifyLinked && (
-        <Button title={"Link your Spotify account"} onPress={() => linkSpotify()}></Button>
+        <Button
+          title={"Link your Spotify account"}
+          onPress={() => router.push("/spotify-link-modal")}
+        ></Button>
       )}
       <Link href="/about" style={styles.button}>
         Go to About screen

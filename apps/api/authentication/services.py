@@ -14,7 +14,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 
 from authentication.email import send_verification_email
-from authentication.exceptions import UserConflictError, WeakPasswordError
+from authentication.exceptions import SpotifyAuthError, UserConflictError, WeakPasswordError
 from authentication.models import (
     BlacklistedRefreshToken,
     EmailVerificationToken,
@@ -232,6 +232,37 @@ def link_spotify_account(user: User, code: str) -> bool:
     )
 
     return True
+
+
+def refresh_spotify_token(credential: SpotifyCredential) -> SpotifyCredential:
+    """Refreshes an expired Spotify access token using the stored refresh token, or raises SpotifyAuthError if the refresh token is no longer valid."""
+
+    basic_auth = base64.b64encode(
+        f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}".encode()
+    ).decode()
+
+    response = http_requests.post(
+        "https://accounts.spotify.com/api/token",
+        data={
+            "grant_type": "refresh_token",
+            "refresh_token": credential.refresh_token,
+        },
+        headers={
+            "Authorization": f"Basic {basic_auth}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    )
+
+    if response.status_code != 200:
+        raise SpotifyAuthError()
+
+    payload = response.json()
+    credential.access_token = payload["access_token"]
+    credential.refresh_token = payload.get("refresh_token", credential.refresh_token)
+    credential.expires_at = timezone.now() + datetime.timedelta(seconds=payload["expires_in"])
+    credential.save()
+
+    return credential
 
 
 def resend_verification_email(email: str):

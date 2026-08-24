@@ -9,7 +9,7 @@ export default function SpotifyLinkModal() {
 
   const handleLink = async () => {
     const linked = await linkSpotify();
-    if (linked) router.back();
+    if (linked && router.canGoBack()) router.back();
   };
 
   return (

@@ -1,7 +1,6 @@
 import { AxiosError } from "axios";
 import { router } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { Alert } from "react-native";
 
 import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
@@ -21,7 +20,6 @@ type AuthContextType = {
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  me: (silent?: boolean) => Promise<void>;
   checkAuth: () => Promise<void>;
   linkSpotify: () => Promise<boolean>;
 };
@@ -129,26 +127,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const me = async (silent: boolean = false) => {
-    setIsLoading(true);
-    try {
-      const meData = await meApi();
-      setUser(meData);
-      setSpotifyLinked(meData.spotify_linked);
-      if (!silent) {
-        Alert.alert("auth/me", JSON.stringify(meData, null, 2));
-      }
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        showSnackbar(error.response?.data?.message ?? "Failed to load profile");
-      } else {
-        showSnackbar("Failed to load profile");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const linkSpotify = async (): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -178,6 +156,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(meData);
           setSpotifyLinked(meData.spotify_linked);
         }
+      } catch {
+        // sessionExpired() (triggered by the Api interceptor) already logs the user out
       } finally {
         setIsCheckingAuth(false);
       }
@@ -202,7 +182,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGoogle,
         logout,
         register,
-        me,
         checkAuth,
         linkSpotify,
       }}

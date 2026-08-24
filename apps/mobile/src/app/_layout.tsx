@@ -1,7 +1,6 @@
 import "../../global.css";
 
-import { router, Stack } from "expo-router";
-import { useEffect } from "react";
+import { Stack } from "expo-router";
 import { PaperProvider } from "react-native-paper";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -23,13 +22,7 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { isAuthenticated, isCheckingAuth, spotifyLinked } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated && !isCheckingAuth && !spotifyLinked) {
-      router.push("/spotify-link-modal");
-    }
-  }, [isAuthenticated, isCheckingAuth, spotifyLinked]);
+  const { isAuthenticated, isCheckingAuth } = useAuth();
 
   if (isCheckingAuth) return null;
   return (
