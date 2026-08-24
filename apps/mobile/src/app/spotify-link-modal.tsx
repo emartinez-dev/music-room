@@ -22,7 +22,13 @@ export default function SpotifyLinkModal() {
       <Text variant="titleMedium" style={{ textAlign: "center" }}>
         Link your Spotify account to vote and edit playlists
       </Text>
-      <Button mode="contained" icon="spotify" onPress={handleLink} loading={isLoading} disabled={isLoading}>
+      <Button
+        mode="contained"
+        icon="spotify"
+        onPress={handleLink}
+        loading={isLoading}
+        disabled={isLoading}
+      >
         Link your Spotify account
       </Button>
     </View>

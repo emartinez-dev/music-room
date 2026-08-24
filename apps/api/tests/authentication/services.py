@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.contrib.auth.models import User
@@ -7,19 +7,22 @@ from django.core import mail
 from django.utils import timezone
 
 from authentication.email import send_password_reset_email
-from authentication.exceptions import UserConflictError, WeakPasswordError
+from authentication.exceptions import SpotifyAuthError, UserConflictError, WeakPasswordError
 from authentication.models import (
     BlacklistedRefreshToken,
     EmailVerificationToken,
     PasswordChangeLog,
     PasswordResetToken,
+    SpotifyCredential,
 )
 from authentication.services import (
     blacklist_refresh_token,
     create_user,
+    link_spotify_account,
     login_user,
     login_with_google,
     refresh_access_token,
+    refresh_spotify_token,
     resend_verification_email,
     reset_password,
     verify_email_user,
@@ -638,3 +641,109 @@ def test_resend_verification_email_invalidates_previous_unused_token():
     resend_verification_email("marc@test.com")
 
     assert not EmailVerificationToken.objects.filter(id=old_token.id).exists()
+
+
+# link_spotify_account tests
+
+
+@patch("authentication.services.http_requests.post")
+def test_link_spotify_account_success(mock_post):
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+
+    mock_post.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {
+            "access_token": "access-token",
+            "refresh_token": "refresh-token",
+            "scope": "user-read-private",
+            "expires_in": 3600,
+        },
+    )
+
+    assert link_spotify_account(user, "auth-code") is True
+
+    credential = SpotifyCredential.objects.get(user=user)
+    assert credential.access_token == "access-token"
+    assert credential.refresh_token == "refresh-token"
+
+
+@patch("authentication.services.http_requests.post")
+def test_link_spotify_account_returns_false_for_invalid_code(mock_post):
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    mock_post.return_value = MagicMock(status_code=400)
+
+    assert link_spotify_account(user, "bad-code") is False
+    assert not SpotifyCredential.objects.filter(user=user).exists()
+
+
+# refresh_spotify_token tests
+
+
+@patch("authentication.services.http_requests.post")
+def test_refresh_spotify_token_updates_credential(mock_post):
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    credential = SpotifyCredential.objects.create(
+        user=user,
+        access_token="old-access",
+        refresh_token="old-refresh",
+        scope="user-read-private",
+        expires_at=timezone.now() - datetime.timedelta(minutes=1),
+    )
+
+    mock_post.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {
+            "access_token": "new-access",
+            "refresh_token": "new-refresh",
+            "expires_in": 3600,
+        },
+    )
+
+    result = refresh_spotify_token(credential)
+
+    assert result.access_token == "new-access"
+    assert result.refresh_token == "new-refresh"
+
+    credential.refresh_from_db()
+    assert credential.access_token == "new-access"
+
+
+@patch("authentication.services.http_requests.post")
+def test_refresh_spotify_token_keeps_old_refresh_token_if_not_rotated(mock_post):
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    credential = SpotifyCredential.objects.create(
+        user=user,
+        access_token="old-access",
+        refresh_token="old-refresh",
+        scope="user-read-private",
+        expires_at=timezone.now() - datetime.timedelta(minutes=1),
+    )
+
+    mock_post.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {
+            "access_token": "new-access",
+            "expires_in": 3600,
+        },
+    )
+
+    result = refresh_spotify_token(credential)
+
+    assert result.refresh_token == "old-refresh"
+
+
+@patch("authentication.services.http_requests.post")
+def test_refresh_spotify_token_raises_if_refresh_fails(mock_post):
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    credential = SpotifyCredential.objects.create(
+        user=user,
+        access_token="old-access",
+        refresh_token="revoked-refresh",
+        scope="user-read-private",
+        expires_at=timezone.now() - datetime.timedelta(minutes=1),
+    )
+
+    mock_post.return_value = MagicMock(status_code=400)
+
+    with pytest.raises(SpotifyAuthError):
+        refresh_spotify_token(credential)
