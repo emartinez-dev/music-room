@@ -1,13 +1,23 @@
 import { Api } from "../api";
-import { googleLoginApi, loginApi, logoutApi, refreshApi, registerApi } from "../auth";
+import {
+  googleLoginApi,
+  loginApi,
+  logoutApi,
+  meApi,
+  refreshApi,
+  registerApi,
+  resendVerificationApi,
+} from "../auth";
 
 jest.mock("../api", () => ({
   Api: {
     post: jest.fn(),
+    get: jest.fn(),
   },
 }));
 
 const mockedPost = Api.post as jest.Mock;
+const mockedGet = Api.get as jest.Mock;
 
 describe("auth service", () => {
   beforeEach(() => {
@@ -89,6 +99,38 @@ describe("auth service", () => {
         refresh: "refresh-token",
       });
       expect(result).toBeNull();
+    });
+  });
+
+  describe("meApi", () => {
+    it("should GET /auth/me", async () => {
+      const response = {
+        data: { id: "abc-123", email: "user@example.com", username: "username" },
+      };
+      mockedGet.mockResolvedValue(response);
+
+      const result = await meApi();
+
+      expect(mockedGet).toHaveBeenCalledWith("/auth/me");
+      expect(result).toEqual({
+        id: "abc-123",
+        email: "user@example.com",
+        username: "username",
+      });
+    });
+  });
+
+  describe("resendVerificationApi", () => {
+    it("should POST to /auth/resend-verification/ with email", async () => {
+      const response = { data: { message: "If an account exists..." } };
+      mockedPost.mockResolvedValue(response);
+
+      const result = await resendVerificationApi("user@example.com");
+
+      expect(mockedPost).toHaveBeenCalledWith("/auth/resend-verification/", {
+        email: "user@example.com",
+      });
+      expect(result).toEqual({ message: "If an account exists..." });
     });
   });
 });

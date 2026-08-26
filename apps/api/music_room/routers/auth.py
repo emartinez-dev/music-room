@@ -1,7 +1,9 @@
 # Router, Schemas
+from django.contrib.auth.models import User
 from ninja import Router
 
 from authentication.auth import JWTAuth
+from authentication.email import send_password_reset_email
 from authentication.schemas import (
     ErrorSchema,
     GoogleLoginResponse,
@@ -10,10 +12,18 @@ from authentication.schemas import (
     LoginSchema,
     LogoutSchema,
     MeResponse,
+    PasswordResetResponse,
+    PasswordResetSchema,
     RefreshResponse,
     RefreshSchema,
     RegisterResponse,
     RegisterSchema,
+    RequestPasswordResetResponse,
+    RequestPasswordResetSchema,
+    ResendVerificationResponse,
+    ResendVerificationSchema,
+    VerifyEmailResponse,
+    VerifyEmailSchema,
 )
 from authentication.services import (
     blacklist_refresh_token,
@@ -21,6 +31,9 @@ from authentication.services import (
     login_user,
     login_with_google,
     refresh_access_token,
+    resend_verification_email,
+    reset_password,
+    verify_email_user,
 )
 
 auth_router = Router()
@@ -28,7 +41,7 @@ jwt_auth = JWTAuth()
 
 
 # /auth/register
-@auth_router.post("/register", response={201: RegisterResponse, 409: ErrorSchema})
+@auth_router.post("/register", response={201: RegisterResponse, 409: ErrorSchema, 400: ErrorSchema})
 def register(request, data: RegisterSchema):
 
     user = create_user(
@@ -38,6 +51,82 @@ def register(request, data: RegisterSchema):
     )
 
     return 201, {"id": str(user.id), "email": user.email}
+
+
+# /auth/verify-email/
+@auth_router.post(
+    "/verify-email/",
+    response={
+        200: VerifyEmailResponse,
+        400: ErrorSchema,
+    },
+)
+def verify_email_with_body(request, data: VerifyEmailSchema):
+    success = verify_email_user(data.token)
+
+    if not success:
+        return 400, {
+            "code": "invalid_token",
+            "message": "Invalid or expired verification token",
+        }
+
+    return 200, {
+        "access": success["access"],
+        "refresh": success["refresh"],
+    }
+
+
+# /auth/resend-verification/
+@auth_router.post(
+    "/resend-verification/",
+    response={
+        200: ResendVerificationResponse,
+    },
+)
+def resend_verification(request, data: ResendVerificationSchema):
+    resend_verification_email(data.email)
+
+    return 200, {
+        "message": "If an account exists for this email, a verification link has been sent."
+    }
+
+
+# /auth/request-password-reset/
+@auth_router.post(
+    "/request-password-reset/",
+    response={
+        200: RequestPasswordResetResponse,
+    },
+)
+def request_password_reset(request, data: RequestPasswordResetSchema):
+    user = User.objects.filter(email=data.email).first()
+
+    if user:
+        send_password_reset_email(user)
+
+    return 200, {"message": "If an account exists for this email, a reset link has been sent."}
+
+
+# /auth/reset-password/
+@auth_router.post(
+    "/reset-password/",
+    response={
+        200: PasswordResetResponse,
+        400: ErrorSchema,
+    },
+)
+def reset_password_endpoint(request, data: PasswordResetSchema):
+    success = reset_password(data.token, data.email, data.new_password)
+
+    if not success:
+        return 400, {
+            "code": "invalid_token",
+            "message": "Invalid or expired verification token",
+        }
+
+    user = User.objects.get(email=data.email)
+
+    return 200, {"id": str(user.id), "email": user.email}
 
 
 # /auth/login

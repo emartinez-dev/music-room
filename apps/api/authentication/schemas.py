@@ -76,3 +76,51 @@ class MeResponse(Schema):
     id: str
     email: str
     username: str
+
+
+# --- /auth/verify-email/ ---
+
+
+class VerifyEmailSchema(Schema):
+    token: str
+
+
+class VerifyEmailResponse(Schema):
+    access: str
+    refresh: str
+
+
+# --- /auth/request-password-reset/ ---
+
+
+class RequestPasswordResetSchema(Schema):
+    email: str
+
+
+class RequestPasswordResetResponse(Schema):
+    message: str
+
+
+# --- /auth/reset-password/ ---
+
+
+class PasswordResetSchema(Schema):
+    email: str
+    token: str
+    new_password: str
+
+
+class PasswordResetResponse(Schema):
+    id: str
+    email: str
+
+
+# --- /auth/resend-verification/ ---
+
+
+class ResendVerificationSchema(Schema):
+    email: str
+
+
+class ResendVerificationResponse(Schema):
+    message: str

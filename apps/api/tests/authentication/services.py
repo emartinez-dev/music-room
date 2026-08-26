@@ -1,17 +1,30 @@
+import datetime
 from unittest.mock import patch
 
 import pytest
 from django.contrib.auth.models import User
+from django.core import mail
+from django.utils import timezone
 
-from authentication.exceptions import UserConflictError
-from authentication.models import BlacklistedRefreshToken
+from authentication.email import send_password_reset_email
+from authentication.exceptions import UserConflictError, WeakPasswordError
+from authentication.models import (
+    BlacklistedRefreshToken,
+    EmailVerificationToken,
+    PasswordChangeLog,
+    PasswordResetToken,
+)
 from authentication.services import (
     blacklist_refresh_token,
     create_user,
     login_user,
     login_with_google,
+    refresh_access_token,
+    resend_verification_email,
+    reset_password,
+    verify_email_user,
 )
-from authentication.utils import create_refresh_token
+from authentication.utils import create_access_token, create_refresh_token
 
 pytestmark = pytest.mark.django_db
 
@@ -20,7 +33,7 @@ def test_create_user():
     user = create_user(
         username="marc",
         email="marc@test.com",
-        password="password123",
+        password="Str0ng-Passw0rd!",
     )
 
     assert user.username == "marc"
@@ -57,6 +70,50 @@ def test_create_user_existing_username_raises():
             email="marc2@test.com",
             password="password456",
         )
+
+
+def test_create_user_returns_existing_user_if_unverified():
+    existing = create_user(
+        username="marc",
+        email="marc@test.com",
+        password="Str0ng-Passw0rd!",
+    )
+    assert existing.is_active is False
+
+    result = create_user(
+        username="ignored-username",
+        email="marc@test.com",
+        password="ignored-password",
+    )
+
+    assert result.id == existing.id
+    assert result.username == "marc"
+    assert User.objects.count() == 1
+
+
+def test_create_user_rejects_weak_password():
+    with pytest.raises(WeakPasswordError):
+        create_user(
+            username="marc",
+            email="marc@test.com",
+            password="password",
+        )
+
+    assert User.objects.count() == 0
+
+
+@patch("authentication.email.send_mail")
+def test_create_user_persists_even_if_verification_email_fails(mock_send_mail):
+    mock_send_mail.side_effect = Exception("SMTP down")
+
+    user = create_user(
+        username="marc",
+        email="marc@test.com",
+        password="Str0ng-Passw0rd!",
+    )
+
+    assert user.username == "marc"
+    assert User.objects.count() == 1
 
 
 def test_login_user_returns_none_if_email_does_not_exist():
@@ -116,6 +173,40 @@ def test_blacklist_refresh_token():
 
     assert blacklisted is not None
     assert blacklisted.refresh_token == refresh_token
+
+
+def test_refresh_access_token_rejects_token_issued_before_password_change():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    refresh_token = create_refresh_token(user.id)
+
+    PasswordChangeLog.objects.create(
+        user=user,
+        changed_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=5),
+    )
+
+    assert refresh_access_token(refresh_token) is None
+
+
+def test_refresh_access_token_allows_token_issued_after_password_change():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+
+    PasswordChangeLog.objects.create(
+        user=user,
+        changed_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(seconds=5),
+    )
+
+    refresh_token = create_refresh_token(user.id)
+    result = refresh_access_token(refresh_token)
+
+    assert result is not None
+    assert "access" in result
+
+
+def test_refresh_access_token_rejects_an_access_token():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    access_token = create_access_token(user.id)
+
+    assert refresh_access_token(access_token) is None
 
 
 # Google OAuth2 login tests with @patch mocks
@@ -214,3 +305,336 @@ def test_login_with_google_returns_none_if_email_verified_is_missing(mock_verify
     }
 
     assert login_with_google("google-token") is None
+
+
+@patch("authentication.services.id_token.verify_oauth2_token")
+def test_login_with_google_returns_none_for_unverified_existing_user(mock_verify):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    mock_verify.return_value = {
+        "sub": "google-sub-123",
+        "email": "marc@test.com",
+        "email_verified": True,
+    }
+
+    assert login_with_google("valid-google-token") is None
+
+
+# verify_email_user tests
+
+
+def test_verify_email_user_activates_user_and_returns_tokens():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    result = verify_email_user(token_obj.token)
+
+    assert result is not None
+    assert "access" in result
+    assert "refresh" in result
+    assert result["email"] == "marc@test.com"
+
+    user.refresh_from_db()
+    assert user.is_active is True
+
+    token_obj.refresh_from_db()
+    assert token_obj.used is True
+
+
+def test_verify_email_user_returns_none_if_token_does_not_exist():
+    assert verify_email_user("000000") is None
+
+
+def test_verify_email_user_returns_none_for_password_reset_token():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert verify_email_user(token_obj.token) is None
+
+
+def test_verify_email_user_returns_none_if_token_already_used():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        used=True,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert verify_email_user(token_obj.token) is None
+
+
+def test_verify_email_user_returns_none_if_token_is_expired():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1),
+    )
+
+    assert verify_email_user(token_obj.token) is None
+    user.refresh_from_db()
+    assert user.is_active is False
+
+
+# reset_password tests
+
+
+def test_reset_password_sets_new_password_and_marks_token_used():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    result = reset_password(token_obj.token, user.email, "new-password")
+
+    assert result is True
+
+    token_obj.refresh_from_db()
+    assert token_obj.used is True
+
+    user.refresh_from_db()
+    user.check_password("new-password")
+    assert user.check_password("new-password") is True
+    assert user.check_password("old-password") is False
+
+
+def test_reset_password_returns_false_if_token_does_not_exist():
+    assert reset_password("000000", "marc@test.com", "new-password") is False
+
+
+def test_reset_password_returns_false_for_email_verification_token():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert reset_password(token_obj.token, user.email, "new-password") is False
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+
+def test_reset_password_returns_false_if_token_already_used():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        used=True,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert reset_password(token_obj.token, user.email, "new-password") is False
+
+
+def test_reset_password_returns_false_if_token_is_expired():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1),
+    )
+
+    assert reset_password(token_obj.token, user.email, "new-password") is False
+
+
+def test_reset_password_returns_false_if_email_does_not_match_token_owner():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    assert reset_password(token_obj.token, "someone-else@test.com", "new-password") is False
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+    token_obj.refresh_from_db()
+    assert token_obj.used is False
+
+
+def test_reset_password_creates_password_change_log():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    before = timezone.now()
+    reset_password(token_obj.token, user.email, "new-password")
+
+    log = PasswordChangeLog.objects.get(user=user)
+    assert log.changed_at >= before
+
+
+def test_reset_password_rejects_weak_password():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    with pytest.raises(WeakPasswordError):
+        reset_password(token_obj.token, user.email, "password")
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+    token_obj.refresh_from_db()
+    assert token_obj.used is False
+
+
+# send_password_reset_email tests
+
+
+def test_send_password_reset_email_creates_token_and_sends_email():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+    )
+
+    token_obj = send_password_reset_email(user)
+
+    assert token_obj.user == user
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["marc@test.com"]
+
+
+@patch("authentication.email.send_mail")
+def test_send_password_reset_email_persists_token_even_if_send_fails(mock_send_mail):
+    mock_send_mail.side_effect = Exception("SMTP down")
+
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = send_password_reset_email(user)
+
+    assert token_obj.user == user
+    assert PasswordResetToken.objects.filter(id=token_obj.id).exists()
+
+
+# resend_verification_email tests
+
+
+def test_resend_verification_email_sends_new_token_for_unverified_user():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    result = resend_verification_email("marc@test.com")
+
+    assert result == user
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["marc@test.com"]
+    assert EmailVerificationToken.objects.filter(user=user, used=False).count() == 1
+
+
+def test_resend_verification_email_returns_none_if_user_does_not_exist():
+    assert resend_verification_email("missing@test.com") is None
+    assert len(mail.outbox) == 0
+
+
+def test_resend_verification_email_returns_none_if_already_verified():
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=True,
+    )
+
+    assert resend_verification_email("marc@test.com") is None
+    assert len(mail.outbox) == 0
+
+
+def test_resend_verification_email_invalidates_previous_unused_token():
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    old_token = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    resend_verification_email("marc@test.com")
+
+    assert not EmailVerificationToken.objects.filter(id=old_token.id).exists()

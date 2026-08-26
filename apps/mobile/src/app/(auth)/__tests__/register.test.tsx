@@ -1,8 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-
-import RegisterScreen from "../register";
 import { useAuth } from "@/context/AuthContext";
+import RegisterScreen from "../register";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -12,6 +11,10 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@/context/AuthContext", () => ({
   useAuth: jest.fn(),
+}));
+
+jest.mock("@/services/googleAuth", () => ({
+  handleGoogleSignIn: jest.fn(),
 }));
 
 const mockedUseAuth = useAuth as jest.Mock;
@@ -50,6 +53,43 @@ describe("RegisterScreen", () => {
     await waitFor(() => {
       expect(register).toHaveBeenCalledWith("username", "user@example.com", "secret");
     });
+  });
+
+  it("should navigate to verify-email screen when registration succeeds", async () => {
+    register.mockResolvedValue(true);
+
+    await render(<RegisterScreen />);
+
+    await fireEvent.changeText(screen.getByLabelText("Username"), "username");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.changeText(screen.getByLabelText("Confirm Password"), "secret");
+    await fireEvent.press(screen.getByText("Create account"));
+
+    await waitFor(() => {
+      expect(mockedRouterPush).toHaveBeenCalledWith({
+        pathname: "/(auth)/verify-email",
+        params: { email: "user@example.com" },
+      });
+    });
+  });
+
+  it("should not navigate to verify-email when registration fails", async () => {
+    register.mockResolvedValue(false);
+
+    await render(<RegisterScreen />);
+
+    await fireEvent.changeText(screen.getByLabelText("Username"), "username");
+    await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "secret");
+    await fireEvent.changeText(screen.getByLabelText("Confirm Password"), "secret");
+    await fireEvent.press(screen.getByText("Create account"));
+
+    await waitFor(() => {
+      expect(register).toHaveBeenCalledWith("username", "user@example.com", "secret");
+    });
+
+    expect(mockedRouterPush).not.toHaveBeenCalled();
   });
 
   it("should not call register when passwords do not match", async () => {

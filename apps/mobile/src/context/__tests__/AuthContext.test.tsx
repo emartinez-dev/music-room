@@ -1,10 +1,16 @@
-import { act, renderHook } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { router } from "expo-router";
 import type { ReactNode } from "react";
-
-import { AuthProvider, useAuth } from "../AuthContext";
 import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
+import { AuthProvider, useAuth } from "../AuthContext";
+
+jest.mock("expo-router", () => ({
+  router: {
+    replace: jest.fn(),
+  },
+}));
 
 jest.mock("@/services/auth", () => ({
   loginApi: jest.fn(),
@@ -71,6 +77,14 @@ describe("AuthContext", () => {
 
       expect(result.current.isAuthenticated).toBe(true);
     });
+
+    it("should set isCheckingAuth to false once the initial check resolves", async () => {
+      const { result } = await renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isCheckingAuth).toBe(false);
+      });
+    });
   });
 
   describe("login", () => {
@@ -113,6 +127,22 @@ describe("AuthContext", () => {
       expect(result.current.user).toBeNull();
       expect(mockedSaveTokens).not.toHaveBeenCalled();
     });
+
+    it("should not toggle isCheckingAuth while logging in, even when login fails", async () => {
+      mockedLoginApi.mockRejectedValue(new Error("network error"));
+
+      const { result } = await renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isCheckingAuth).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.login("user@example.com", "wrong");
+      });
+
+      expect(result.current.isCheckingAuth).toBe(false);
+    });
   });
 
   describe("loginWithGoogle", () => {
@@ -142,14 +172,6 @@ describe("AuthContext", () => {
         id: "abc-123",
         email: "user@example.com",
       });
-      mockedLoginApi.mockResolvedValue({
-        access: "access-token",
-        refresh: "refresh-token",
-      });
-      mockedMeApi.mockResolvedValue({
-        id: "123",
-        email: "user@example.com",
-      });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
@@ -158,8 +180,8 @@ describe("AuthContext", () => {
       });
 
       expect(mockedRegisterApi).toHaveBeenCalledWith("username", "user@example.com", "secret");
-      expect(mockedLoginApi).toHaveBeenCalledWith("user@example.com", "secret");
-      expect(result.current.isAuthenticated).toBe(true);
+      expect(mockedLoginApi).not.toHaveBeenCalled();
+      expect(result.current.isAuthenticated).toBe(false);
     });
 
     it("should not authenticate when register fails", async () => {
@@ -219,6 +241,18 @@ describe("AuthContext", () => {
 
       expect(mockedLogoutApi).not.toHaveBeenCalled();
       expect(mockedClearTokens).toHaveBeenCalled();
+    });
+
+    it("should navigate to the login screen", async () => {
+      mockedGetRefreshToken.mockResolvedValue(null);
+
+      const { result } = await renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.logout();
+      });
+
+      expect(router.replace).toHaveBeenCalledWith("/(auth)/login");
     });
   });
 });

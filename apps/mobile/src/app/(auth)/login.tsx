@@ -43,7 +43,7 @@ export default function LoginScreen() {
         mode="text"
         compact
         onPress={() => {
-          router.push("/(auth)/reset");
+          router.push("/(auth)/reset-password");
         }}
       >
         Forgot your password?

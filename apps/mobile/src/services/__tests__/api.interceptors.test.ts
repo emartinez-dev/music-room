@@ -49,9 +49,9 @@ jest.mock("../sessionManager", () => ({
   sessionExpired: jest.fn(),
 }));
 
+import * as SecureStore from "expo-secure-store";
 import { Api } from "../api";
 import { sessionExpired } from "../sessionManager";
-import * as SecureStore from "expo-secure-store";
 
 const mockedSessionExpired = sessionExpired as jest.MockedFunction<typeof sessionExpired>;
 const mockedGetItemAsync = SecureStore.getItemAsync as jest.Mock;
@@ -81,5 +81,23 @@ describe("Api refresh token interceptor", () => {
     });
 
     expect(mockedSessionExpired).toHaveBeenCalled();
+  });
+
+  describe.each([
+    "/auth/login",
+    "/auth/register",
+    "/auth/refresh",
+    "/auth/verify-email",
+    "/auth/resend-verification",
+  ])("excluded from the refresh-retry flow: %s", (url) => {
+    it("should not attempt a token refresh on 401", async () => {
+      mockedGetItemAsync.mockResolvedValue(null);
+
+      await expect(Api.post(url, {})).rejects.toThrow();
+
+      const refreshApiPost = postSpies[1];
+      expect(refreshApiPost).not.toHaveBeenCalled();
+      expect(mockedSessionExpired).not.toHaveBeenCalled();
+    });
   });
 });

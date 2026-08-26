@@ -3,9 +3,14 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth.models import User
+from django.core import mail
 from django.test import Client
 
-from authentication.models import BlacklistedRefreshToken
+from authentication.models import (
+    BlacklistedRefreshToken,
+    EmailVerificationToken,
+    PasswordResetToken,
+)
 from authentication.utils import create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
@@ -22,7 +27,7 @@ def test_register_success(client):
         data={
             "username": "marc",
             "email": "marc@test.com",
-            "password": "password123",
+            "password": "Str0ng-Passw0rd!",
         },
         content_type="application/json",
     )
@@ -33,6 +38,22 @@ def test_register_success(client):
 
     assert body["email"] == "marc@test.com"
     assert "id" in body
+
+
+def test_register_weak_password(client):
+    response = client.post(
+        "/api/auth/register",
+        data={
+            "username": "marc",
+            "email": "marc@test.com",
+            "password": "password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+    assert User.objects.count() == 0
 
 
 def test_register_existing_email(client):
@@ -267,18 +288,27 @@ def test_token(client):
         data={
             "username": "marc",
             "email": "marc@test.com",
-            "password": "password123",
+            "password": "Str0ng-Passw0rd!",
         },
         content_type="application/json",
     )
 
     assert register_response.status_code == 201
 
+    verification_token = EmailVerificationToken.objects.get(user__email="marc@test.com")
+    verify_response = client.post(
+        "/api/auth/verify-email/",
+        data={"token": verification_token.token},
+        content_type="application/json",
+    )
+
+    assert verify_response.status_code == 200
+
     login_response = client.post(
         "/api/auth/login",
         data={
             "email": "marc@test.com",
-            "password": "password123",
+            "password": "Str0ng-Passw0rd!",
         },
         content_type="application/json",
     )
@@ -298,3 +328,358 @@ def test_token(client):
         "email": "marc@test.com",
         "username": "marc",
     }
+
+
+# verify-email endpoint tests
+
+
+def test_verify_email_success_returns_tokens(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/verify-email/",
+        data={"token": token_obj.token},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert "access" in body
+    assert "refresh" in body
+
+
+def test_verify_email_invalid_token(client):
+    response = client.post(
+        "/api/auth/verify-email/",
+        data={"token": "000000"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "code": "invalid_token",
+        "message": "Invalid or expired verification token",
+    }
+
+
+def test_verify_email_already_used(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        used=True,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/verify-email/",
+        data={"token": token_obj.token},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "code": "invalid_token",
+        "message": "Invalid or expired verification token",
+    }
+
+
+def test_verify_email_expired_token(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    token_obj = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/verify-email/",
+        data={"token": token_obj.token},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "code": "invalid_token",
+        "message": "Invalid or expired verification token",
+    }
+
+
+# resend-verification endpoint tests
+
+
+def test_resend_verification_success(client):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    response = client.post(
+        "/api/auth/resend-verification/",
+        data={"email": "marc@test.com"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "If an account exists for this email, a verification link has been sent."
+    }
+    assert len(mail.outbox) == 1
+
+
+def test_resend_verification_nonexistent_email_returns_generic_response(client):
+    response = client.post(
+        "/api/auth/resend-verification/",
+        data={"email": "nonexistent@test.com"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "If an account exists for this email, a verification link has been sent."
+    }
+    assert len(mail.outbox) == 0
+
+
+def test_resend_verification_already_verified_returns_generic_response(client):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=True,
+    )
+
+    response = client.post(
+        "/api/auth/resend-verification/",
+        data={"email": "marc@test.com"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "If an account exists for this email, a verification link has been sent."
+    }
+    assert len(mail.outbox) == 0
+
+
+# request-password-reset endpoint tests
+
+
+def test_request_password_reset_success(client):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+    )
+
+    response = client.post(
+        "/api/auth/request-password-reset/",
+        data={"email": "marc@test.com"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "If an account exists for this email, a reset link has been sent."
+    }
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["marc@test.com"]
+
+
+def test_request_password_reset_nonexistent_email_returns_generic_response(client):
+    response = client.post(
+        "/api/auth/request-password-reset/",
+        data={"email": "nonexistent@test.com"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "If an account exists for this email, a reset link has been sent."
+    }
+    assert len(mail.outbox) == 0
+
+
+def test_reset_password_success(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": token_obj.token,
+            "new_password": "new-password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["email"] == "marc@test.com"
+    assert "id" in body
+
+    user.refresh_from_db()
+    assert user.check_password("new-password") is True
+
+    token_obj.refresh_from_db()
+    assert token_obj.used is True
+
+
+def test_reset_password_weak_password(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": token_obj.token,
+            "new_password": "password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+
+def test_reset_password_invalid_token(client):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": "000000",
+            "new_password": "new-password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "code": "invalid_token",
+        "message": "Invalid or expired verification token",
+    }
+
+
+def test_reset_password_email_does_not_match_token_owner(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+
+    response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "someone-else@test.com",
+            "token": token_obj.token,
+            "new_password": "new-password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "code": "invalid_token",
+        "message": "Invalid or expired verification token",
+    }
+
+    user.refresh_from_db()
+    assert user.check_password("old-password") is True
+
+
+def test_reset_password_invalidates_previously_issued_access_token(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    login_response = client.post(
+        "/api/auth/login",
+        data={"email": "marc@test.com", "password": "old-password"},
+        content_type="application/json",
+    )
+    access_token = login_response.json()["access"]
+
+    me_response = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION=f"Bearer {access_token}",
+    )
+    assert me_response.status_code == 200
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+    reset_response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": token_obj.token,
+            "new_password": "new-password",
+        },
+        content_type="application/json",
+    )
+    assert reset_response.status_code == 200
+
+    me_response_after_reset = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION=f"Bearer {access_token}",
+    )
+    assert me_response_after_reset.status_code == 401

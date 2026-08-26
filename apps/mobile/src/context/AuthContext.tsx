@@ -1,4 +1,5 @@
 import { AxiosError } from "axios";
+import { router } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 
@@ -12,12 +13,14 @@ type User = { id: string; email: string };
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
+  isCheckingAuth: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  me: () => Promise<void>;
+  me: (silent?: boolean) => Promise<void>;
+  checkAuth: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -25,16 +28,22 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const { showSnackbar } = useSnackbar();
+
+  const checkAuth = async () => {
+    const access = await getAccessToken();
+    setIsAuthenticated(!!access);
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { access, refresh } = await loginApi(email, password);
       await saveTokens(access, refresh);
-
+      await checkAuth();
       const me = await meApi();
 
       setUser(me);
@@ -53,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
 
     try {
-      saveTokens(tokens.access, tokens.refresh);
+      await saveTokens(tokens.access, tokens.refresh);
 
       setUser(tokens.user);
       setIsAuthenticated(true);
@@ -85,9 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         showSnackbar("Logout failed");
       }
     } finally {
-      clearTokens();
+      await clearTokens();
       setUser(null);
       setIsAuthenticated(false);
+      router.replace("/(auth)/login");
     }
   }, [showSnackbar]);
 
@@ -97,24 +107,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { email: registeredEmail } = await registerApi(username, email, password);
 
-      await login(registeredEmail, password);
+      showSnackbar(`Check ${registeredEmail} to verify your account`);
+      return true;
     } catch (error) {
       if (error instanceof AxiosError) {
         showSnackbar(error.response?.data?.message ?? "Register failed");
       } else {
         showSnackbar("Register failed");
       }
-    }
 
-    setIsLoading(false);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const me = async () => {
+  const me = async (silent: boolean = false) => {
     setIsLoading(true);
     try {
       const meData = await meApi();
       setUser(meData);
-      Alert.alert("auth/me", JSON.stringify(meData, null, 2));
+      if (!silent) {
+        Alert.alert("auth/me", JSON.stringify(meData, null, 2));
+      }
     } catch (error) {
       if (error instanceof AxiosError) {
         showSnackbar(error.response?.data?.message ?? "Failed to load profile");
@@ -128,10 +143,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAccessToken = async () => {
-      const access = await getAccessToken();
+      try {
+        const access = await getAccessToken();
 
-      if (access) {
-        setIsAuthenticated(true);
+        if (access) {
+          setIsAuthenticated(true);
+        }
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
 
@@ -147,12 +166,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
+        isCheckingAuth,
         isAuthenticated,
         login,
         loginWithGoogle,
         logout,
         register,
         me,
+        checkAuth,
       }}
     >
       {children}

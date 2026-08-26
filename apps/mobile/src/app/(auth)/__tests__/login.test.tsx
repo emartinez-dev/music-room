@@ -62,7 +62,7 @@ describe("LoginScreen", () => {
 
     await fireEvent.press(screen.getByText("Forgot your password?"));
 
-    expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/reset");
+    expect(mockedRouterPush).toHaveBeenCalledWith("/(auth)/reset-password");
   });
 
   it("should navigate to register screen", async () => {
