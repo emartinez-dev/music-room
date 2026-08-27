@@ -19,6 +19,7 @@ const SPOTIFY_SCOPES = [
   "user-read-currently-playing",
 ];
 
+// First step of Spotify OAuth prompt: launch and retrieve the authorization code
 export async function handleSpotifyLink() {
   const redirectUri = AuthSession.makeRedirectUri({ scheme: "mobile", path: "spotify-callback" });
 
