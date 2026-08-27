@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Share, View } from "react-native";
 import { IconButton, Menu, Text } from "react-native-paper";
 
+import { APP_LINKS_URL } from "@/../config";
 import { TrackSearch } from "@/components/TrackSearch";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { addTrackToRoomApi, deleteRoomApi, getRoomApi } from "@/services/rooms";
@@ -60,7 +61,7 @@ export default function RoomDetailScreen() {
 
   const handleInvite = async () => {
     setMenuVisible(false);
-    await Share.share({ message: `Join my room on Music Room: mobile://rooms/${roomId}` });
+    await Share.share({ message: `Join my room on Music Room: ${APP_LINKS_URL}/rooms/${roomId}` });
   };
 
   return (
