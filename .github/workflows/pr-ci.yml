@@ -53,7 +53,15 @@ jobs:
 
       - name: Run tests
         working-directory: apps/api
-        run: python -m pytest --cov=music_room --cov=authentication --cov-report=term-missing
+        run: python -m pytest --cov=music_room --cov=authentication --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: apps/api/coverage.xml
+          flags: api
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   mobile-tests:
     name: Mobile tests (jest)
@@ -75,7 +83,15 @@ jobs:
 
       - name: Run tests
         working-directory: apps/mobile
-        run: npm test -- --ci
+        run: npm test -- --ci --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: apps/mobile/coverage/lcov.info
+          flags: mobile
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # Single job to set as the required status check in branch protection —
   # it aggregates both suites so only one check needs to be selected.
