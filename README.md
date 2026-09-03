@@ -1,5 +1,8 @@
 # music-room
 
+[![API coverage](https://codecov.io/gh/emartinez-dev/music-room/branch/master/graph/badge.svg?flag=api)](https://codecov.io/gh/emartinez-dev/music-room/tree/master/apps/api)
+[![Mobile coverage](https://codecov.io/gh/emartinez-dev/music-room/branch/master/graph/badge.svg?flag=mobile)](https://codecov.io/gh/emartinez-dev/music-room/tree/master/apps/mobile)
+
 ## Development help
 
 ### Backend
