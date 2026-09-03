@@ -1,15 +1,24 @@
 name: PR CI
 
-# Cloud-only validation for PRs targeting the main branch.
-# No local hooks are involved — pushes to feature/*, develop, etc. are never touched by this file.
+# PR validation runs in the cloud only. Pushes to feature/*, develop, etc. never
+# trigger this file, and there are no local pre-commit/pre-push hooks anywhere in the repo.
+#
+# The `push` trigger below is NOT a validation gate (branch protection already blocks
+# merges via the pull_request run). It exists solely so Codecov gets a coverage report
+# recorded against master's actual tip commit after a PR merges. Codecov's per-branch
+# badges read from that data, and a pull_request-triggered run is always attributed to
+# the PR's head branch/commit, never to master.
 on:
   pull_request:
-    branches: [master, main]
+    branches: [master]
     types: [opened, reopened, synchronize]
+  push:
+    branches: [master]
 
 # Cancel superseded runs when a PR is updated again before CI finishes.
+# (github.event.pull_request.number is empty on push, so those runs get their own group per ref.)
 concurrency:
-  group: pr-ci-${{ github.event.pull_request.number }}
+  group: pr-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -93,8 +102,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
-  # Single job to set as the required status check in branch protection —
-  # it aggregates both suites so only one check needs to be selected.
+  # Single job to set as the required status check in branch protection.
+  # It aggregates both suites so only one check needs to be selected.
   ci-status:
     name: CI Passed
     if: always()
