@@ -1,7 +1,9 @@
 # music-room
 
-[![API coverage](https://codecov.io/gh/emartinez-dev/music-room/branch/master/graph/badge.svg?flag=api)](https://codecov.io/gh/emartinez-dev/music-room/tree/master/apps/api)
-[![Mobile coverage](https://codecov.io/gh/emartinez-dev/music-room/branch/master/graph/badge.svg?flag=mobile)](https://codecov.io/gh/emartinez-dev/music-room/tree/master/apps/mobile)
+| Component | Coverage |
+| -- | -- |
+| API | [![API coverage](https://codecov.io/gh/emartinez-dev/music-room/branch/master/graph/badge.svg?flag=api)](https://codecov.io/gh/emartinez-dev/music-room/tree/master/apps/api) |
+| Mobile | [![Mobile coverage](https://codecov.io/gh/emartinez-dev/music-room/branch/master/graph/badge.svg?flag=mobile)](https://codecov.io/gh/emartinez-dev/music-room/tree/master/apps/mobile) |
 
 ## Development help
 
@@ -36,12 +38,13 @@ Or:
 ### Frontend
 
 Prerequisites:
+
 - pnpm 11.1.2
 - Expo app on your phone
 
 Instructions to deploy:
 
 1. Run `make install` (the frontend dependencies were installed with the backend)
-3. Deploy the backend on another terminal and ensure that it's running.
-2. Run `make mobile-build` (the app development build will be built)
+2. Deploy the backend on another terminal and ensure that it's running.
+3. Run `make mobile-build` (the app development build will be built)
 4. Run `make mobile` and follow the instructions in the terminal.
