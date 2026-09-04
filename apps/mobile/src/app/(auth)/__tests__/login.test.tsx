@@ -1,9 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-
-import LoginScreen from "../login";
 import { useAuth } from "@/context/AuthContext";
 import { handleGoogleSignIn } from "@/services/googleAuth";
+import LoginScreen from "../login";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -91,6 +90,49 @@ describe("LoginScreen", () => {
         refresh: "refresh",
         user: { id: "1", email: "google@example.com" },
       });
+    });
+  });
+
+  it("should hide the password until the eye icon is pressed", async () => {
+    await render(<LoginScreen />);
+
+    expect(screen.getByLabelText("Password").props.secureTextEntry).toBe(true);
+
+    await fireEvent.press(screen.getByTestId("icon-eye"));
+
+    expect(screen.getByLabelText("Password").props.secureTextEntry).toBe(false);
+  });
+
+  it("should hide the password again when the eye-off icon is pressed", async () => {
+    await render(<LoginScreen />);
+
+    await fireEvent.press(screen.getByTestId("icon-eye"));
+    await fireEvent.press(screen.getByTestId("icon-eye-off"));
+
+    expect(screen.getByLabelText("Password").props.secureTextEntry).toBe(true);
+  });
+
+  // A cancelled Google sign-in must not take the user into the app.
+  it("should not log in when Google sign-in fails", async () => {
+    mockedHandleGoogleSignIn.mockRejectedValue(new Error("sign in cancelled"));
+
+    await render(<LoginScreen />);
+
+    await fireEvent.press(screen.getByText("Continue with Google"));
+
+    await waitFor(() => {
+      expect(mockedHandleGoogleSignIn).toHaveBeenCalled();
+    });
+    expect(loginWithGoogle).not.toHaveBeenCalled();
+  });
+
+  it("should submit whatever is typed, leaving validation to the API", async () => {
+    await render(<LoginScreen />);
+
+    await fireEvent.press(screen.getByText("Log in"));
+
+    await waitFor(() => {
+      expect(login).toHaveBeenCalledWith("", "");
     });
   });
 

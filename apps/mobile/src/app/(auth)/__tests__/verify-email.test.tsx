@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
 import { resendVerificationApi } from "@/services/auth";
+import { saveTokens } from "@/services/secureStore";
 import VerifyEmailScreen from "../verify-email";
 
 jest.mock("expo-router", () => ({
@@ -40,9 +41,10 @@ jest.mock("@/services/secureStore", () => ({
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseSnackbar = useSnackbar as jest.Mock;
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.Mock;
-const mockedApi = Api as { post: jest.Mock };
+const mockedApi = Api as unknown as { post: jest.Mock };
 const mockedResendVerificationApi = resendVerificationApi as jest.Mock;
 const mockedRouterReplace = router.replace as jest.Mock;
+const mockedSaveTokens = saveTokens as jest.Mock;
 
 let tokenCounter = 0;
 
@@ -131,6 +133,102 @@ describe("VerifyEmailScreen", () => {
 
     await waitFor(() => {
       expect(showSnackbar).toHaveBeenCalledWith("Verification email sent to user@example.com");
+    });
+  });
+
+  it("should store the session returned by a successful verification", async () => {
+    const token = `token-${tokenCounter}`;
+    mockedUseLocalSearchParams.mockReturnValue({ token });
+    mockedApi.post.mockResolvedValue({
+      data: { access: "access-token", refresh: "refresh-token" },
+    });
+
+    await render(<VerifyEmailScreen />);
+
+    await waitFor(() => {
+      expect(mockedSaveTokens).toHaveBeenCalledWith("access-token", "refresh-token");
+    });
+
+    // The user must land on the tabs already logged in, so the auth state has
+    // to be refreshed before navigating.
+    await waitFor(() => {
+      expect(checkAuth).toHaveBeenCalled();
+      expect(me).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it("should stay on the screen and not store a session when verification fails", async () => {
+    const token = `token-${tokenCounter}`;
+    mockedUseLocalSearchParams.mockReturnValue({ token });
+    mockedApi.post.mockRejectedValue(new Error("network error"));
+
+    await render(<VerifyEmailScreen />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Open the link from your email to verify your account."),
+      ).toBeTruthy();
+    });
+
+    expect(mockedSaveTokens).not.toHaveBeenCalled();
+    expect(mockedRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it("should show a spinner while the token is being verified", async () => {
+    const token = `token-${tokenCounter}`;
+    mockedUseLocalSearchParams.mockReturnValue({ token });
+    mockedApi.post.mockImplementation(() => new Promise(() => {}));
+
+    await render(<VerifyEmailScreen />);
+
+    expect(screen.queryByText("Open the link from your email to verify your account.")).toBeNull();
+  });
+
+  it("should show the API message when resending the verification email fails", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({ email: "user@example.com" });
+
+    const axiosError = new AxiosError("test error", "test_code", undefined, undefined, {
+      data: { message: "Too many requests, try again later" },
+      status: 429,
+      statusText: "Too Many Requests",
+      headers: {},
+      config: {},
+    } as never);
+
+    mockedResendVerificationApi.mockRejectedValue(axiosError);
+
+    await render(<VerifyEmailScreen />);
+
+    await fireEvent.press(screen.getByText("Resend verification email"));
+
+    await waitFor(() => {
+      expect(showSnackbar).toHaveBeenCalledWith("Too many requests, try again later");
+    });
+  });
+
+  it("should show a generic message when resending fails without an API message", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({ email: "user@example.com" });
+    mockedResendVerificationApi.mockRejectedValue(new Error("network error"));
+
+    await render(<VerifyEmailScreen />);
+
+    await fireEvent.press(screen.getByText("Resend verification email"));
+
+    await waitFor(() => {
+      expect(showSnackbar).toHaveBeenCalledWith("Could not resend email");
+    });
+  });
+
+  it("should re-enable the resend button after a failure so the user can retry", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({ email: "user@example.com" });
+    mockedResendVerificationApi.mockRejectedValue(new Error("network error"));
+
+    await render(<VerifyEmailScreen />);
+
+    await fireEvent.press(screen.getByText("Resend verification email"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Resend verification email")).not.toBeDisabled();
     });
   });
 
