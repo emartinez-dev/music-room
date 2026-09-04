@@ -24,7 +24,7 @@ from authentication.services import (
     reset_password,
     verify_email_user,
 )
-from authentication.utils import create_access_token, create_refresh_token
+from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
 
@@ -40,6 +40,38 @@ def test_create_user():
     assert user.email == "marc@test.com"
 
     assert User.objects.count() == 1
+
+
+def test_create_user_sends_a_verification_email_and_creates_a_token():
+    user = create_user(
+        username="marc",
+        email="marc@test.com",
+        password="Str0ng-Passw0rd!",
+    )
+
+    assert user.is_active is False
+
+    assert EmailVerificationToken.objects.filter(user=user, used=False).count() == 1
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["marc@test.com"]
+
+
+def test_create_user_does_not_resend_email_for_existing_unverified_user():
+    create_user(
+        username="marc",
+        email="marc@test.com",
+        password="Str0ng-Passw0rd!",
+    )
+    mail.outbox.clear()
+
+    create_user(
+        username="marc",
+        email="marc@test.com",
+        password="Str0ng-Passw0rd!",
+    )
+
+    assert len(mail.outbox) == 0
+    assert EmailVerificationToken.objects.filter(used=False).count() == 1
 
 
 def test_create_user_existing_email_raises():
@@ -162,6 +194,23 @@ def test_login_user_returns_tokens():
     assert isinstance(tokens["refresh"], str)
 
 
+def test_login_user_returns_none_if_user_is_not_active():
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    assert (
+        login_user(
+            email="marc@test.com",
+            password="password123",
+        )
+        is None
+    )
+
+
 def test_blacklist_refresh_token():
     refresh_token = create_refresh_token(1)
 
@@ -173,6 +222,45 @@ def test_blacklist_refresh_token():
 
     assert blacklisted is not None
     assert blacklisted.refresh_token == refresh_token
+
+
+def test_blacklist_refresh_token_ignores_an_invalid_token():
+    assert blacklist_refresh_token("not-a-real-token") is None
+
+    assert BlacklistedRefreshToken.objects.count() == 0
+
+
+def test_blacklist_refresh_token_is_idempotent():
+    refresh_token = create_refresh_token(1)
+
+    blacklist_refresh_token(refresh_token)
+    blacklist_refresh_token(refresh_token)
+
+    assert BlacklistedRefreshToken.objects.count() == 1
+
+
+def test_refresh_access_token_returns_new_access_token():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    refresh_token = create_refresh_token(user.id)
+
+    result = refresh_access_token(refresh_token)
+
+    assert result is not None
+    assert decode_token(result["access"])["user_id"] == user.id
+    assert decode_token(result["access"])["type"] == "access"
+
+
+def test_refresh_access_token_returns_none_for_an_invalid_token():
+    assert refresh_access_token("not-a-real-token") is None
+
+
+def test_refresh_access_token_returns_none_for_a_blacklisted_token():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+    refresh_token = create_refresh_token(user.id)
+
+    blacklist_refresh_token(refresh_token)
+
+    assert refresh_access_token(refresh_token) is None
 
 
 def test_refresh_access_token_rejects_token_issued_before_password_change():
