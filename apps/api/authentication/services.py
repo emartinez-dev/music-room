@@ -115,10 +115,13 @@ def blacklist_refresh_token(refresh_token: str):
     )
 
     try:
-        BlacklistedRefreshToken.objects.create(
-            refresh_token=refresh_token,
-            expires_at=expires_at,
-        )
+        # The savepoint keeps a duplicate token from breaking an enclosing
+        # transaction, so logging out twice stays a no-op instead of a 500.
+        with transaction.atomic():
+            BlacklistedRefreshToken.objects.create(
+                refresh_token=refresh_token,
+                expires_at=expires_at,
+            )
     except IntegrityError:
         pass
 

@@ -11,7 +11,7 @@ from authentication.models import (
     EmailVerificationToken,
     PasswordResetToken,
 )
-from authentication.utils import create_refresh_token, decode_token
+from authentication.utils import create_access_token, create_refresh_token, decode_token
 
 pytestmark = pytest.mark.django_db
 
@@ -81,6 +81,45 @@ def test_register_existing_email(client):
     }
 
 
+def test_register_existing_unverified_email_returns_the_same_user(client):
+    first = client.post(
+        "/api/auth/register",
+        data={
+            "username": "marc",
+            "email": "marc@test.com",
+            "password": "Str0ng-Passw0rd!",
+        },
+        content_type="application/json",
+    )
+
+    assert first.status_code == 201
+
+    second = client.post(
+        "/api/auth/register",
+        data={
+            "username": "another",
+            "email": "marc@test.com",
+            "password": "An0ther-Passw0rd!",
+        },
+        content_type="application/json",
+    )
+
+    assert second.status_code == 201
+    assert second.json()["id"] == first.json()["id"]
+    assert User.objects.count() == 1
+
+
+def test_register_requires_all_fields(client):
+    response = client.post(
+        "/api/auth/register",
+        data={"email": "marc@test.com"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422
+    assert User.objects.count() == 0
+
+
 def test_login_success(client):
     User.objects.create_user(
         username="marc",
@@ -135,6 +174,31 @@ def test_login_invalid_password(client):
         data={
             "email": "marc@test.com",
             "password": "wrong-password",
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "code": "unauthorized",
+        "message": "Invalid credentials",
+    }
+
+
+def test_login_unverified_user_is_rejected(client):
+    User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+        is_active=False,
+    )
+
+    response = client.post(
+        "/api/auth/login",
+        data={
+            "email": "marc@test.com",
+            "password": "password123",
         },
         content_type="application/json",
     )
@@ -211,6 +275,102 @@ def test_refresh_blacklisted_token(client):
         "code": "unauthorized",
         "message": "Invalid refresh token",
     }
+
+
+def test_logout_is_idempotent(client):
+    refresh_token = create_refresh_token(1)
+
+    for _ in range(2):
+        response = client.post(
+            "/api/auth/logout",
+            data={"refresh": refresh_token},
+            content_type="application/json",
+        )
+
+        assert response.status_code == 204
+
+    assert BlacklistedRefreshToken.objects.count() == 1
+
+
+def test_logout_then_refresh_is_rejected(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+    )
+
+    login_response = client.post(
+        "/api/auth/login",
+        data={"email": "marc@test.com", "password": "password123"},
+        content_type="application/json",
+    )
+    refresh_token = login_response.json()["refresh"]
+
+    logout_response = client.post(
+        "/api/auth/logout",
+        data={"refresh": refresh_token},
+        content_type="application/json",
+    )
+
+    assert logout_response.status_code == 204
+
+    refresh_response = client.post(
+        "/api/auth/refresh",
+        data={"refresh": refresh_token},
+        content_type="application/json",
+    )
+
+    assert refresh_response.status_code == 401
+    assert User.objects.filter(id=user.id).exists()
+
+
+def test_refresh_invalid_token(client):
+    response = client.post(
+        "/api/auth/refresh",
+        data={"refresh": "not-a-real-token"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "code": "unauthorized",
+        "message": "Invalid refresh token",
+    }
+
+
+def test_refresh_rejects_an_access_token(client):
+    response = client.post(
+        "/api/auth/refresh",
+        data={"refresh": create_access_token(1)},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 401
+
+
+def test_refreshed_access_token_is_accepted_by_me(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+    )
+
+    refresh_response = client.post(
+        "/api/auth/refresh",
+        data={"refresh": create_refresh_token(user.id)},
+        content_type="application/json",
+    )
+
+    assert refresh_response.status_code == 200
+
+    me_response = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION=f"Bearer {refresh_response.json()['access']}",
+    )
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "marc@test.com"
 
 
 @patch("music_room.routers.auth.login_with_google")
@@ -328,6 +488,39 @@ def test_token(client):
         "email": "marc@test.com",
         "username": "marc",
     }
+
+
+# me endpoint tests
+
+
+def test_me_requires_authentication(client):
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 401
+
+
+def test_me_rejects_an_invalid_token(client):
+    response = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION="Bearer not-a-real-token",
+    )
+
+    assert response.status_code == 401
+
+
+def test_me_rejects_a_refresh_token(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="password123",
+    )
+
+    response = client.get(
+        "/api/auth/me",
+        HTTP_AUTHORIZATION=f"Bearer {create_refresh_token(user.id)}",
+    )
+
+    assert response.status_code == 401
 
 
 # verify-email endpoint tests
@@ -683,3 +876,80 @@ def test_reset_password_invalidates_previously_issued_access_token(client):
         HTTP_AUTHORIZATION=f"Bearer {access_token}",
     )
     assert me_response_after_reset.status_code == 401
+
+
+def test_reset_password_invalidates_previously_issued_refresh_token(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    login_response = client.post(
+        "/api/auth/login",
+        data={"email": "marc@test.com", "password": "old-password"},
+        content_type="application/json",
+    )
+    refresh_token = login_response.json()["refresh"]
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+    reset_response = client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": token_obj.token,
+            "new_password": "new-password",
+        },
+        content_type="application/json",
+    )
+
+    assert reset_response.status_code == 200
+
+    refresh_response = client.post(
+        "/api/auth/refresh",
+        data={"refresh": refresh_token},
+        content_type="application/json",
+    )
+
+    assert refresh_response.status_code == 401
+
+
+def test_login_with_new_password_after_reset(client):
+    user = User.objects.create_user(
+        username="marc",
+        email="marc@test.com",
+        password="old-password",
+    )
+
+    token_obj = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1),
+    )
+    client.post(
+        "/api/auth/reset-password/",
+        data={
+            "email": "marc@test.com",
+            "token": token_obj.token,
+            "new_password": "new-password",
+        },
+        content_type="application/json",
+    )
+
+    old_password_response = client.post(
+        "/api/auth/login",
+        data={"email": "marc@test.com", "password": "old-password"},
+        content_type="application/json",
+    )
+
+    assert old_password_response.status_code == 401
+
+    new_password_response = client.post(
+        "/api/auth/login",
+        data={"email": "marc@test.com", "password": "new-password"},
+        content_type="application/json",
+    )
+
+    assert new_password_response.status_code == 200
