@@ -21,6 +21,7 @@ type AuthContextType = {
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   linkSpotify: () => Promise<boolean>;
 };
 
@@ -38,6 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     const access = await getAccessToken();
     setIsAuthenticated(!!access);
+  };
+
+  const refreshProfile = async () => {
+    const meData = await meApi();
+    setUser(meData);
+    setSpotifyLinked(meData.spotify_linked);
   };
 
   const login = async (email: string, password: string) => {
@@ -183,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         register,
         checkAuth,
+        refreshProfile,
         linkSpotify,
       }}
     >

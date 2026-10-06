@@ -50,13 +50,13 @@ let tokenCounter = 0;
 
 describe("VerifyEmailScreen", () => {
   const checkAuth = jest.fn();
-  const me = jest.fn();
+  const refreshProfile = jest.fn();
   const showSnackbar = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     tokenCounter += 1;
-    mockedUseAuth.mockReturnValue({ checkAuth, me });
+    mockedUseAuth.mockReturnValue({ checkAuth, refreshProfile });
     mockedUseSnackbar.mockReturnValue({ showSnackbar });
     mockedUseLocalSearchParams.mockReturnValue({});
   });
@@ -153,7 +153,7 @@ describe("VerifyEmailScreen", () => {
     // to be refreshed before navigating.
     await waitFor(() => {
       expect(checkAuth).toHaveBeenCalled();
-      expect(me).toHaveBeenCalledWith(true);
+      expect(refreshProfile).toHaveBeenCalled();
     });
   });
 

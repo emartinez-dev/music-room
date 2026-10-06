@@ -35,12 +35,10 @@ const RefreshApi = axios.create({
 // This interceptor will add the Authorization: Bearer header to every request
 Api.interceptors.request.use(
   async (config) => {
-    if (!config.headers.Authorization) {
-      const accessToken = await getAccessToken();
+    const accessToken = await getAccessToken();
 
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;
@@ -56,6 +54,7 @@ Api.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
+      !originalConfig?._retry &&
       !originalConfig?.url?.includes("/auth/login") &&
       !originalConfig?.url?.includes("/auth/register") &&
       !originalConfig?.url?.includes("/auth/refresh") &&
@@ -64,18 +63,12 @@ Api.interceptors.response.use(
       !originalConfig?.url?.includes("/auth/google") &&
       !originalConfig?.url?.includes("/auth/logout")
     ) {
-      if (originalConfig._retry) {
-        sessionExpired();
-        return Promise.reject(error);
-      }
-
       originalConfig._retry = true;
 
       try {
         const refreshToken = await getRefreshToken();
 
         if (!refreshToken) {
-          sessionExpired();
           return Promise.reject(error);
         }
 

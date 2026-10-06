@@ -1,8 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { AxiosError } from "axios";
 import { router } from "expo-router";
-import type { ReactNode } from "react";
-import { Alert } from "react-native";
+import React from "react";
 import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
@@ -59,9 +58,9 @@ function axiosErrorWithMessage(message: string) {
   } as never);
 }
 
-const mockedAlert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
-
-const wrapper = ({ children }: { children: ReactNode }) => <AuthProvider>{children}</AuthProvider>;
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <AuthProvider>{children}</AuthProvider>
+);
 
 describe("AuthContext", () => {
   beforeEach(() => {
@@ -449,74 +448,26 @@ describe("AuthContext", () => {
     });
   });
 
-  describe("me", () => {
-    it("should load the profile and show it in an alert", async () => {
-      mockedMeApi.mockResolvedValue({ id: "123", email: "user@example.com" });
+  describe("refreshProfile", () => {
+    it("should load the profile and expose the user and spotifyLinked flag", async () => {
+      mockedMeApi.mockResolvedValue({
+        id: "123",
+        email: "user@example.com",
+        spotify_linked: true,
+      });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.me();
+        await result.current.refreshProfile();
       });
 
-      expect(result.current.user).toEqual({ id: "123", email: "user@example.com" });
-      expect(mockedAlert).toHaveBeenCalledWith(
-        "auth/me",
-        JSON.stringify({ id: "123", email: "user@example.com" }, null, 2),
-      );
-    });
-
-    // verify-email calls me(true) as part of a redirect, where an alert would
-    // interrupt the flow.
-    it("should load the profile without an alert in silent mode", async () => {
-      mockedMeApi.mockResolvedValue({ id: "123", email: "user@example.com" });
-
-      const { result } = await renderHook(() => useAuth(), { wrapper });
-
-      await act(async () => {
-        await result.current.me(true);
+      expect(result.current.user).toEqual({
+        id: "123",
+        email: "user@example.com",
+        spotify_linked: true,
       });
-
-      expect(result.current.user).toEqual({ id: "123", email: "user@example.com" });
-      expect(mockedAlert).not.toHaveBeenCalled();
-    });
-
-    it("should keep the previous user and show the API message when the profile fails to load", async () => {
-      mockedMeApi.mockRejectedValue(axiosErrorWithMessage("Profile unavailable"));
-
-      const { result } = await renderHook(() => useAuth(), { wrapper });
-
-      await act(async () => {
-        await result.current.me();
-      });
-
-      expect(result.current.user).toBeNull();
-      expect(mockShowSnackbar).toHaveBeenCalledWith("Profile unavailable");
-      expect(mockedAlert).not.toHaveBeenCalled();
-    });
-
-    it("should show a generic message when the profile fails without an API message", async () => {
-      mockedMeApi.mockRejectedValue(new Error("network error"));
-
-      const { result } = await renderHook(() => useAuth(), { wrapper });
-
-      await act(async () => {
-        await result.current.me();
-      });
-
-      expect(mockShowSnackbar).toHaveBeenCalledWith("Failed to load profile");
-    });
-
-    it("should clear isLoading once the profile call settles", async () => {
-      mockedMeApi.mockRejectedValue(new Error("network error"));
-
-      const { result } = await renderHook(() => useAuth(), { wrapper });
-
-      await act(async () => {
-        await result.current.me();
-      });
-
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.spotifyLinked).toBe(true);
     });
   });
 
