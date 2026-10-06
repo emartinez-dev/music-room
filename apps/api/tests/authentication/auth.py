@@ -1,6 +1,8 @@
 import datetime
 
+import jwt
 import pytest
+from django.conf import settings
 from django.contrib.auth.models import User
 
 from authentication.auth import JWTAuth
@@ -64,3 +66,54 @@ def test_authenticate_allows_token_issued_after_password_change():
     token = create_access_token(user.id)
 
     assert JWTAuth().authenticate(None, token) == user
+
+
+def test_authenticate_rejects_an_expired_token():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+
+    issued_at = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1)
+    expired_token = jwt.encode(
+        {
+            "user_id": user.id,
+            "type": "access",
+            "iat": issued_at,
+            "exp": issued_at + datetime.timedelta(minutes=30),
+        },
+        settings.SECRET_KEY,
+        algorithm="HS256",
+    )
+
+    assert JWTAuth().authenticate(None, expired_token) is None
+
+
+def test_authenticate_rejects_a_token_signed_with_another_secret():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+
+    forged_token = jwt.encode(
+        {
+            "user_id": user.id,
+            "type": "access",
+            "iat": datetime.datetime.now(datetime.UTC),
+            "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30),
+        },
+        "not-the-real-secret-key",
+        algorithm="HS256",
+    )
+
+    assert JWTAuth().authenticate(None, forged_token) is None
+
+
+def test_authenticate_rejects_a_token_without_a_type():
+    user = User.objects.create_user(username="marc", email="marc@test.com", password="password123")
+
+    untyped_token = jwt.encode(
+        {
+            "user_id": user.id,
+            "iat": datetime.datetime.now(datetime.UTC),
+            "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30),
+        },
+        settings.SECRET_KEY,
+        algorithm="HS256",
+    )
+
+    assert JWTAuth().authenticate(None, untyped_token) is None

@@ -9,8 +9,11 @@ from authentication.schemas import (
     LoginResponse,
     LoginSchema,
     LogoutSchema,
+    MeResponse,
     PasswordResetResponse,
     PasswordResetSchema,
+    RefreshResponse,
+    RefreshSchema,
     RegisterResponse,
     RegisterSchema,
     RequestPasswordResetResponse,
@@ -188,3 +191,23 @@ def test_resend_verification_response():
     response = ResendVerificationResponse(message="If an account exists...")
 
     assert response.message == "If an account exists..."
+
+
+def test_refresh_schema():
+    schema = RefreshSchema(refresh="refresh-token")
+
+    assert schema.refresh == "refresh-token"
+
+
+def test_refresh_response():
+    response = RefreshResponse(access="access-token")
+
+    assert response.access == "access-token"
+
+
+def test_me_response():
+    response = MeResponse(id="1", email="marc@test.com", username="marc")
+
+    assert response.id == "1"
+    assert response.email == "marc@test.com"
+    assert response.username == "marc"

@@ -28,7 +28,7 @@ jest.mock("@/services/api", () => ({
 
 const mockedUseSnackbar = useSnackbar as jest.Mock;
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.Mock;
-const mockedApi = Api as { post: jest.Mock };
+const mockedApi = Api as unknown as { post: jest.Mock };
 const mockedRouterReplace = router.replace as jest.Mock;
 const mockedRouterDismissAll = router.dismissAll as jest.Mock;
 
@@ -109,6 +109,47 @@ describe("ResetScreen", () => {
       });
     });
 
+    it("should lock the email field once the reset has been requested", async () => {
+      mockedApi.post.mockResolvedValue({ data: {} });
+
+      await render(<ResetScreen />);
+
+      await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+      expect(screen.getByLabelText("Email").props.editable).toBe(true);
+
+      await fireEvent.press(screen.getByText("Request password reset"));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Email").props.editable).toBe(false);
+      });
+      expect(screen.getByText("Check your email")).toBeDisabled();
+    });
+
+    it("should prefill the email coming from the deep link", async () => {
+      mockedUseLocalSearchParams.mockReturnValue({ email: "linked@example.com" });
+
+      await render(<ResetScreen />);
+
+      expect(screen.getByLabelText("Email").props.value).toBe("linked@example.com");
+    });
+
+    // A failed request must leave the user able to try again.
+    it("should keep the form usable when the request fails", async () => {
+      mockedApi.post.mockRejectedValue(new Error("network error"));
+
+      await render(<ResetScreen />);
+
+      await fireEvent.changeText(screen.getByLabelText("Email"), "user@example.com");
+      await fireEvent.press(screen.getByText("Request password reset"));
+
+      await waitFor(() => {
+        expect(showSnackbar).toHaveBeenCalledWith("Request failed");
+      });
+
+      expect(screen.getByText("Request password reset")).not.toBeDisabled();
+      expect(screen.getByLabelText("Email").props.editable).toBe(true);
+    });
+
     it("should show generic snackbar message on non-AxiosError during request", async () => {
       mockedApi.post.mockRejectedValue(new Error("network error"));
 
@@ -179,6 +220,61 @@ describe("ResetScreen", () => {
         expect(mockedRouterDismissAll).toHaveBeenCalled();
         expect(mockedRouterReplace).toHaveBeenCalledWith("/(auth)/login");
       });
+    });
+
+    it("should toggle each new-password field independently", async () => {
+      await render(<ResetScreen />);
+
+      expect(screen.getByLabelText("New password").props.secureTextEntry).toBe(true);
+      expect(screen.getByLabelText("Confirm new password").props.secureTextEntry).toBe(true);
+
+      await fireEvent.press(screen.getAllByTestId("icon-eye")[0]);
+
+      expect(screen.getByLabelText("New password").props.secureTextEntry).toBe(false);
+      expect(screen.getByLabelText("Confirm new password").props.secureTextEntry).toBe(true);
+
+      // The remaining eye icon belongs to the confirmation field
+      await fireEvent.press(screen.getByTestId("icon-eye"));
+
+      expect(screen.getByLabelText("Confirm new password").props.secureTextEntry).toBe(false);
+    });
+
+    // The token comes from the emailed link, so the confirm step must not fall
+    // back to the request form even when the email param is absent.
+    it("should stay on the confirm step when only a token is present", async () => {
+      mockedUseLocalSearchParams.mockReturnValue({ token: "the-token" });
+      mockedApi.post.mockResolvedValue({ data: {} });
+
+      await render(<ResetScreen />);
+
+      await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "new-password");
+      await fireEvent.press(screen.getByText("Reset password"));
+
+      await waitFor(() => {
+        expect(mockedApi.post).toHaveBeenCalledWith("/auth/reset-password/", {
+          email: "",
+          token: "the-token",
+          new_password: "new-password",
+        });
+      });
+    });
+
+    it("should not navigate away when the reset fails", async () => {
+      mockedApi.post.mockRejectedValue(new Error("network error"));
+
+      await render(<ResetScreen />);
+
+      await fireEvent.changeText(screen.getByLabelText("New password"), "new-password");
+      await fireEvent.changeText(screen.getByLabelText("Confirm new password"), "new-password");
+      await fireEvent.press(screen.getByText("Reset password"));
+
+      await waitFor(() => {
+        expect(showSnackbar).toHaveBeenCalledWith("Reset failed");
+      });
+
+      expect(mockedRouterDismissAll).not.toHaveBeenCalled();
+      expect(mockedRouterReplace).not.toHaveBeenCalled();
     });
 
     it("should disable the reset button while loading", async () => {
