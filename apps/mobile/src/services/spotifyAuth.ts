@@ -36,5 +36,5 @@ export async function handleSpotifyLink() {
     throw new Error("Spotify authorization was not completed");
   }
 
-  return spotifyLinkApi(result.params.code, result.params.state ?? "");
+  return spotifyLinkApi(result.params.code);
 }

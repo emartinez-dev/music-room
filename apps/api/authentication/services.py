@@ -216,6 +216,7 @@ def link_spotify_account(user: User, code: str) -> bool:
             "Authorization": f"Basic {basic_auth}",
             "Content-Type": "application/x-www-form-urlencoded",
         },
+        timeout=10,
     )
 
     if response.status_code != 200:
@@ -254,6 +255,7 @@ def refresh_spotify_token(credential: SpotifyCredential) -> SpotifyCredential:
             "Authorization": f"Basic {basic_auth}",
             "Content-Type": "application/x-www-form-urlencoded",
         },
+        timeout=10,
     )
 
     if response.status_code != 200:

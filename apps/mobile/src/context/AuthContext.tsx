@@ -52,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { access, refresh } = await loginApi(email, password);
       await saveTokens(access, refresh);
-      await checkAuth();
       const me = await meApi();
 
       setUser(me);

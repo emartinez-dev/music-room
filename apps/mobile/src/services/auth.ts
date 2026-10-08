@@ -46,7 +46,7 @@ export async function resendVerificationApi(email: string): Promise<ResendVerifi
   return data;
 }
 
-export async function spotifyLinkApi(code: string, state: string): Promise<null> {
-  const { data } = await Api.post("/auth/spotify", { code, state });
+export async function spotifyLinkApi(code: string): Promise<null> {
+  const { data } = await Api.post("/auth/spotify", { code });
   return data;
 }

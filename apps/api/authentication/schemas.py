@@ -74,7 +74,6 @@ class GoogleUserResponse(Schema):
 
 class SpotifyLinkSchema(Schema):
     code: str
-    state: str
 
 
 # --- /auth/me/ ---

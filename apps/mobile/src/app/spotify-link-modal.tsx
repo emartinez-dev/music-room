@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { useEffect, useRef } from "react";
 import { View } from "react-native";
 import { Button, IconButton, Text } from "react-native-paper";
 
@@ -6,10 +7,20 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SpotifyLinkModal() {
   const { linkSpotify, isLoading } = useAuth();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const handleLink = async () => {
     const linked = await linkSpotify();
-    if (linked && router.canGoBack()) router.back();
+    // On Android, the spotify-callback screen may have already dismissed this
+    // modal (dismissAll()) by the time this resolves, racing with the navigation
+    // below — skip it if that already happened.
+    if (linked && isMounted.current && router.canGoBack()) router.back();
   };
 
   return (

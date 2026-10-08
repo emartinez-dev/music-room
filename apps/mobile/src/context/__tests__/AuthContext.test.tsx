@@ -118,6 +118,7 @@ describe("AuthContext", () => {
       mockedMeApi.mockResolvedValue({
         id: "123",
         email: "user@example.com",
+        spotify_linked: true,
       });
 
       const { result } = await renderHook(() => useAuth(), { wrapper });
@@ -132,7 +133,9 @@ describe("AuthContext", () => {
       expect(result.current.user).toEqual({
         id: "123",
         email: "user@example.com",
+        spotify_linked: true,
       });
+      expect(result.current.spotifyLinked).toBe(true);
       expect(result.current.isLoading).toBe(false);
     });
 

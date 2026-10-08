@@ -142,7 +142,10 @@ Response 200: { id, email }
 ```
 POST /auth/spotify
 Headers: Authorization: Bearer <access_token>
-Body: { code, state }   ← OAuth code from Spotify
+Body: { code }   ← OAuth code from Spotify (the state round-trip is
+                    already verified client-side by expo-auth-session
+                    before this call is made, so the backend doesn't
+                    need its own copy)
 Response 204
 Response 400: invalid or expired Spotify authorization code
 ```
