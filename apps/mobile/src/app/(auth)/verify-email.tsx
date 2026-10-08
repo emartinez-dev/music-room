@@ -16,7 +16,7 @@ export default function VerifyEmailScreen() {
   const { token, email } = useLocalSearchParams<{ token?: string; email?: string }>();
   const [isLoading, setIsLoading] = useState(!!token && !processedTokens.has(token));
   const [isResending, setIsResending] = useState(false);
-  const { checkAuth, me } = useAuth();
+  const { checkAuth, refreshProfile } = useAuth();
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function VerifyEmailScreen() {
 
         await saveTokens(data.access, data.refresh);
         await checkAuth();
-        await me(true);
+        await refreshProfile();
         router.replace("/(tabs)");
       } catch (error) {
         if (error instanceof AxiosError) {

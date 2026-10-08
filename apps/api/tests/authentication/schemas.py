@@ -206,8 +206,9 @@ def test_refresh_response():
 
 
 def test_me_response():
-    response = MeResponse(id="1", email="marc@test.com", username="marc")
+    response = MeResponse(id="1", email="marc@test.com", username="marc", spotify_linked=True)
 
     assert response.id == "1"
     assert response.email == "marc@test.com"
     assert response.username == "marc"
+    assert response.spotify_linked is True

@@ -29,6 +29,7 @@ function RootLayoutNav() {
     <Stack>
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="spotify-link-modal" options={{ presentation: "modal" }} />
       </Stack.Protected>
       <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen name="(auth)" />
