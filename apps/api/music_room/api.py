@@ -1,8 +1,10 @@
 from ninja import NinjaAPI
 
-from authentication.exceptions import UserConflictError, WeakPasswordError
+from authentication.exceptions import SpotifyAuthError, UserConflictError, WeakPasswordError
 
 from .routers.auth import auth_router
+from .routers.rooms import rooms_router
+from .routers.tracks import tracks_router
 
 api = NinjaAPI()
 
@@ -31,8 +33,26 @@ def on_weak_password(request, exc):
     )
 
 
+@api.exception_handler(SpotifyAuthError)
+def on_spotify_auth_error(request, exc):
+    return api.create_response(
+        request,
+        {
+            "code": "forbidden",
+            "message": "Link your Spotify account to use this feature",
+        },
+        status=403,
+    )
+
+
 # /routers/auth.py Endpoints
 api.add_router("/auth/", auth_router)
+
+# /routers/tracks.py Endpoints
+api.add_router("/tracks/", tracks_router)
+
+# /routers/rooms.py Endpoints
+api.add_router("/rooms", rooms_router)
 
 
 @api.get("/health")

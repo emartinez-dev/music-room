@@ -487,6 +487,7 @@ def test_token(client):
         "id": register_response.json()["id"],
         "email": "marc@test.com",
         "username": "marc",
+        "spotify_linked": False,
     }
 
 

@@ -1,11 +1,11 @@
 import { AxiosError } from "axios";
 import { router } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { Alert } from "react-native";
 
 import { loginApi, logoutApi, meApi, registerApi } from "@/services/auth";
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from "@/services/secureStore";
 import { setSessionExpiredHandler } from "@/services/sessionManager";
+import { handleSpotifyLink } from "@/services/spotifyAuth";
 
 import { useSnackbar } from "./SnackbarContext";
 
@@ -15,12 +15,14 @@ type AuthContextType = {
   isLoading: boolean;
   isCheckingAuth: boolean;
   isAuthenticated: boolean;
+  spotifyLinked: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (tokens: { access: string; refresh: string; user: User }) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  me: (silent?: boolean) => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  linkSpotify: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [spotifyLinked, setSpotifyLinked] = useState<boolean>(false);
 
   const { showSnackbar } = useSnackbar();
 
@@ -38,15 +41,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(!!access);
   };
 
+  const refreshProfile = async () => {
+    const meData = await meApi();
+    setUser(meData);
+    setSpotifyLinked(meData.spotify_linked);
+  };
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { access, refresh } = await loginApi(email, password);
       await saveTokens(access, refresh);
-      await checkAuth();
       const me = await meApi();
 
       setUser(me);
+      setSpotifyLinked(me.spotify_linked);
       setIsAuthenticated(true);
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -64,7 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await saveTokens(tokens.access, tokens.refresh);
 
-      setUser(tokens.user);
+      const me = await meApi();
+      setUser(me);
+      setSpotifyLinked(me.spotify_linked);
       setIsAuthenticated(true);
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -122,20 +133,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const me = async (silent: boolean = false) => {
+  const linkSpotify = async (): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const meData = await meApi();
-      setUser(meData);
-      if (!silent) {
-        Alert.alert("auth/me", JSON.stringify(meData, null, 2));
-      }
+      await handleSpotifyLink();
+      setSpotifyLinked(true);
+      return true;
     } catch (error) {
       if (error instanceof AxiosError) {
-        showSnackbar(error.response?.data?.message ?? "Failed to load profile");
+        showSnackbar(error.response?.data?.message ?? "Failed to link Spotify account");
       } else {
-        showSnackbar("Failed to load profile");
+        showSnackbar("Failed to link Spotify account");
       }
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +158,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (access) {
           setIsAuthenticated(true);
+          const meData = await meApi();
+          setUser(meData);
+          setSpotifyLinked(meData.spotify_linked);
         }
+      } catch {
+        // sessionExpired() (triggered by the Api interceptor) already logs the user out
       } finally {
         setIsCheckingAuth(false);
       }
@@ -168,12 +183,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isCheckingAuth,
         isAuthenticated,
+        spotifyLinked,
         login,
         loginWithGoogle,
         logout,
         register,
-        me,
         checkAuth,
+        refreshProfile,
+        linkSpotify,
       }}
     >
       {children}

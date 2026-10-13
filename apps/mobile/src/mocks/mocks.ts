@@ -53,8 +53,11 @@ const routes: Array<{ method: string; path: string; handler: MockHandler }> = [
     handler: ({ code }) => {
       if (code === "invalid-code")
         return {
-          status: 401,
-          data: { code: "unauthorized", message: "cannot link your Spotify account" },
+          status: 400,
+          data: {
+            code: "validation_error",
+            message: "Invalid or expired Spotify authorization code",
+          },
         };
       return { status: 204, data: null };
     },

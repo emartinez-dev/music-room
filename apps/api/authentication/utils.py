@@ -25,6 +25,7 @@ def create_refresh_token(user_id: int) -> str:
 
 
 def decode_token(token: str) -> dict:
+    """Checks the token against SECRET_KEY or raises an exception"""
     return jwt.decode(
         token,
         settings.SECRET_KEY,

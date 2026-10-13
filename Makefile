@@ -7,7 +7,7 @@ MOCKS ?= 0
 # Detect whether docker or podman is installed (works on Unix and Windows)
 ifneq (,$(shell command -v docker 2>/dev/null))
     COMPOSE := docker compose
-else ifneq (,$(shell where.exe docker 2>/dev/null))
+else ifneq (,$(shell where.exe docker 2>NUL))
     COMPOSE := docker compose
 else ifneq (,$(shell command -v podman 2>/dev/null))
     COMPOSE := podman compose
@@ -45,7 +45,7 @@ api-lint:
 	cd apps/api && $(VENV_PY) -m ruff check .
 
 api-test:
-	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov=authentication --cov-report=term-missing
+	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov-report=term-missing
 
 db:
 	$(COMPOSE) up -d
@@ -61,9 +61,6 @@ mobile:
 mobile-build:
 	cd apps/mobile && npx expo prebuild --platform android && npx expo run:android
 
-mobile-clean:
-	cd apps/mobile && npx expo prebuild --clean
-
 mobile-format:
 	pnpm biome format apps/mobile/
 
@@ -78,6 +75,6 @@ mobile-test:
 fix:
 	$(MAKE) api-format
 	cd apps/api && $(VENV_PY) -m ruff check --fix .
-	pnpm biome format apps/mobile/ --write
+	$(MAKE) mobile-format
 
 .PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-format mobile-lint mobile-test fix

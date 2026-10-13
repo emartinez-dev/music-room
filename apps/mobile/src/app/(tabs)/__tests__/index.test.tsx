@@ -55,14 +55,6 @@ describe("Home screen", () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it("should fetch the profile when the user info button is pressed", async () => {
-    await render(<Index />);
-
-    await fireEvent.press(screen.getByText("Get User Info"));
-
-    expect(me).toHaveBeenCalledTimes(1);
-  });
-
   it("should link to the about screen", async () => {
     await render(<Index />);
 
