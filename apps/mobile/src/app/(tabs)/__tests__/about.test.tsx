@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
+import { router } from "expo-router";
 
 import AboutScreen from "../about";
 
@@ -16,5 +17,23 @@ describe("About screen", () => {
 
     expect(screen.getByText("Music Room")).toBeTruthy();
     expect(screen.getByText("Listen together")).toBeTruthy();
+  });
+
+  it("should go back to the previous screen", async () => {
+    (router.canGoBack as jest.Mock).mockReturnValue(true);
+    await render(<AboutScreen />);
+
+    await fireEvent.press(screen.getByLabelText("Go back"));
+
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it("should go home when there is no screen to go back to", async () => {
+    (router.canGoBack as jest.Mock).mockReturnValue(false);
+    await render(<AboutScreen />);
+
+    await fireEvent.press(screen.getByLabelText("Go back"));
+
+    expect(router.navigate).toHaveBeenCalledWith("/");
   });
 });

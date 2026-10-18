@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 
 import { useAuth } from "@/context/AuthContext";
@@ -26,8 +26,9 @@ jest.mock("@/context/PlayerContext", () => ({
   usePlayer: () => ({ stop: jest.fn() }),
 }));
 
+const mockShowSnackbar = jest.fn();
 jest.mock("@/context/SnackbarContext", () => ({
-  useSnackbar: () => ({ showSnackbar: jest.fn() }),
+  useSnackbar: () => ({ showSnackbar: mockShowSnackbar }),
 }));
 
 jest.mock("@/services/rooms", () => ({
@@ -78,6 +79,24 @@ describe("Home screen", () => {
     // Road trip stays in the "Your rooms" carousel but leaves the quick access grid
     expect(screen.getAllByText("Road trip")).toHaveLength(before - 1);
     expect(screen.getAllByText("Friday party").length).toBeGreaterThan(1);
+  });
+
+  it("should show every room again under the all filter", async () => {
+    await render(<HomeScreen />);
+    const before = (await screen.findAllByText("Road trip")).length;
+
+    await fireEvent.press(screen.getAllByText("Hosted by you")[0]);
+    await fireEvent.press(screen.getByText("All"));
+
+    expect(screen.getAllByText("Road trip")).toHaveLength(before);
+  });
+
+  it("should tell the user when the rooms fail to load", async () => {
+    mockedListRooms.mockRejectedValue(new Error("Network Error"));
+
+    await render(<HomeScreen />);
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith("Failed to load rooms"));
   });
 
   it("should offer to create a room when there are none", async () => {

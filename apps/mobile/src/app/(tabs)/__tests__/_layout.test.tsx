@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import { Tabs } from "expo-router";
 
 import TabLayout from "../_layout";
@@ -7,11 +7,22 @@ jest.mock("expo-router", () => {
   const React = require("react");
   const { View } = require("react-native");
 
-  const Tabs = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(View, null, children);
+  // Renders the custom tab bar too, so the test can check it is the one plugged in
+  const Tabs = ({
+    children,
+    tabBar,
+  }: {
+    children: React.ReactNode;
+    tabBar: (props: object) => React.ReactNode;
+  }) => React.createElement(View, null, children, tabBar({}));
   Tabs.Screen = jest.fn(() => null);
 
   return { Tabs };
+});
+
+jest.mock("@/components/TabBar", () => {
+  const { Text } = require("react-native");
+  return { TabBar: () => <Text>Custom tab bar</Text> };
 });
 
 const mockedScreen = Tabs.Screen as unknown as jest.Mock;
@@ -35,5 +46,11 @@ describe("Tab layout", () => {
         ([props]: [{ options: { title: string } }]) => props.options.title,
       ),
     ).toEqual(["Home", "Search", "Your Library", "About"]);
+  });
+
+  it("should use the custom tab bar", async () => {
+    await render(<TabLayout />);
+
+    expect(screen.getByText("Custom tab bar")).toBeTruthy();
   });
 });
