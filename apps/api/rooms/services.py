@@ -36,6 +36,7 @@ def get_room_detail(user: User, room_id: int) -> dict | None:
                 "name": room_track.track.name,
                 "artist": room_track.track.artist,
                 "image_url": room_track.track.image_url,
+                "duration_ms": room_track.track.duration_ms,
             }
             for room_track in room_tracks
         ],

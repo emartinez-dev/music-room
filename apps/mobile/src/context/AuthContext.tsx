@@ -9,7 +9,7 @@ import { handleSpotifyLink } from "@/services/spotifyAuth";
 
 import { useSnackbar } from "./SnackbarContext";
 
-type User = { id: string; email: string };
+type User = { id: string; email: string; username?: string };
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;

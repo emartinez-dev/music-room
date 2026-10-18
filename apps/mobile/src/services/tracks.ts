@@ -1,6 +1,6 @@
 import { Api } from "./api";
 
-type TrackSearchResult = {
+export type TrackSearchResult = {
   spotify_uri: string;
   name: string;
   artist: string;

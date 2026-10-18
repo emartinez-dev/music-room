@@ -1,8 +1,10 @@
 import { AxiosError } from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { View } from "react-native";
-import { Button, TextInput } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { TextInput } from "react-native-paper";
+import { AuthScaffold, authInputProps } from "@/components/AuthScaffold";
+import { PillButton } from "@/components/ui/PillButton";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
 
@@ -66,16 +68,16 @@ export default function ResetScreen() {
 
   if (token) {
     return (
-      <View className="flex m-4 gap-2">
+      <AuthScaffold title="Choose a new password">
         <TextInput
           key={`password-${showPassword ? "visible" : "hidden"}`}
+          {...authInputProps}
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
-          mode="outlined"
           secureTextEntry={!showPassword}
           autoComplete="new-password"
-          left={<TextInput.Icon icon="lock" />}
+          left={<TextInput.Icon icon="lock-outline" />}
           right={
             <TextInput.Icon
               icon={showPassword ? "eye-off" : "eye"}
@@ -85,13 +87,13 @@ export default function ResetScreen() {
         />
         <TextInput
           key={`confirm-password-${showConfirmPassword ? "visible" : "hidden"}`}
+          {...authInputProps}
           label="Confirm new password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          mode="outlined"
           secureTextEntry={!showConfirmPassword}
           autoComplete="new-password"
-          left={<TextInput.Icon icon="lock-check" />}
+          left={<TextInput.Icon icon="lock-check-outline" />}
           right={
             <TextInput.Icon
               icon={showConfirmPassword ? "eye-off" : "eye"}
@@ -99,29 +101,42 @@ export default function ResetScreen() {
             />
           }
         />
-        <Button mode="contained" onPress={handleResetPassword} disabled={isLoading}>
-          Reset password
-        </Button>
-      </View>
+        <PillButton
+          label="Reset password"
+          onPress={handleResetPassword}
+          disabled={isLoading}
+          style={styles.submit}
+        />
+      </AuthScaffold>
     );
   }
 
   return (
-    <View className="flex m-4 gap-2">
+    <AuthScaffold
+      title="Reset your password"
+      subtitle="Enter your email and we'll send you a link to get back into your account."
+    >
       <TextInput
+        {...authInputProps}
         label="Email"
         value={email}
         onChangeText={setEmail}
-        mode="outlined"
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
         editable={!requested}
-        left={<TextInput.Icon icon="email" />}
+        left={<TextInput.Icon icon="email-outline" />}
       />
-      <Button mode="contained" onPress={handleRequestReset} disabled={isLoading || requested}>
-        {requested ? "Check your email" : "Request password reset"}
-      </Button>
-    </View>
+      <PillButton
+        label={requested ? "Check your email" : "Request password reset"}
+        onPress={handleRequestReset}
+        disabled={isLoading || requested}
+        style={styles.submit}
+      />
+    </AuthScaffold>
   );
 }
+
+const styles = StyleSheet.create({
+  submit: { marginTop: 12 },
+});

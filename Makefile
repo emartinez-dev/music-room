@@ -45,7 +45,7 @@ api-lint:
 	cd apps/api && $(VENV_PY) -m ruff check .
 
 api-test:
-	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov-report=term-missing
+	cd apps/api && $(VENV_PY) -m pytest --cov=music_room --cov=authentication --cov-report=term-missing
 
 db:
 	$(COMPOSE) up -d
@@ -61,6 +61,9 @@ mobile:
 mobile-build:
 	cd apps/mobile && npx expo prebuild --platform android && npx expo run:android
 
+mobile-clean:
+	cd apps/mobile && npx expo prebuild --clean
+
 mobile-format:
 	pnpm biome format apps/mobile/
 
@@ -75,6 +78,9 @@ mobile-test:
 fix:
 	$(MAKE) api-format
 	cd apps/api && $(VENV_PY) -m ruff check --fix .
-	$(MAKE) mobile-format
+	pnpm biome format apps/mobile/ --write
 
-.PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-format mobile-lint mobile-test fix
+.PHONY: install api migrate api-lint api-format api-test db clear-db mobile mobile-build mobile-clean mobile-format mobile-lint mobile-test fix
+
+# Windows + POSIX shell variants (cris-*), kept separate so they don't change the targets above
+-include cris.mk

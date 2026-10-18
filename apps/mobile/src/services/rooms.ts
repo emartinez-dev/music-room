@@ -1,8 +1,14 @@
 import { Api } from "./api";
 
-type RoomListItem = { id: number; name: string; host_username: string };
-type RoomTrackItem = { spotify_uri: string; name: string; artist: string; image_url: string };
-type RoomDetail = RoomListItem & { tracks: RoomTrackItem[] };
+export type RoomListItem = { id: number; name: string; host_username: string };
+export type RoomTrackItem = {
+  spotify_uri: string;
+  name: string;
+  artist: string;
+  image_url: string;
+  duration_ms: number;
+};
+export type RoomDetail = RoomListItem & { tracks: RoomTrackItem[] };
 
 export async function createRoomApi(name: string): Promise<RoomListItem> {
   const { data } = await Api.post("/rooms", { name });
