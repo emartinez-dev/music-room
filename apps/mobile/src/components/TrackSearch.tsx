@@ -1,87 +1,63 @@
-import { AxiosError } from "axios";
 import { useState } from "react";
-import { Image, Pressable, View } from "react-native";
-import { ActivityIndicator, Text, TextInput } from "react-native-paper";
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
 
-import { useSnackbar } from "@/context/SnackbarContext";
-import { searchTracksApi } from "@/services/tracks";
+import { useTrackSearch } from "@/hooks/useTrackSearch";
+import { colors } from "@/theme/colors";
 
-type TrackSearchResult = {
-  spotify_uri: string;
-  name: string;
-  artist: string;
-  album: string;
-  duration_ms: number;
-  image_url: string;
-};
-
-const MAX_RESULTS = 5;
+import { TrackRow } from "./TrackRow";
+import { SearchInput } from "./ui/SearchInput";
 
 type TrackSearchProps = {
   onSelectTrack?: (spotifyUri: string) => void;
+  // Tracks already in the room, shown with a check instead of the add button
+  addedUris?: string[];
 };
 
-export function TrackSearch({ onSelectTrack }: TrackSearchProps) {
+export function TrackSearch({ onSelectTrack, addedUris = [] }: TrackSearchProps) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TrackSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const { showSnackbar } = useSnackbar();
-
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-
-    setIsSearching(true);
-    try {
-      const tracks = await searchTracksApi(query);
-      setResults(tracks.slice(0, MAX_RESULTS));
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        showSnackbar(error.response?.data?.message ?? "Track search failed");
-      } else {
-        showSnackbar("Track search failed");
-      }
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSelect = (track: TrackSearchResult) => {
-    onSelectTrack?.(track.spotify_uri);
-    setResults([]);
-    setQuery("");
-  };
+  const { results, isSearching } = useTrackSearch(query);
 
   return (
-    <View>
-      <TextInput
-        label="Search a track"
+    <View style={styles.container}>
+      <SearchInput
         value={query}
         onChangeText={setQuery}
-        onSubmitEditing={handleSearch}
-        mode="outlined"
-        returnKeyType="search"
-        left={<TextInput.Icon icon="magnify" onPress={handleSearch} />}
+        placeholder="Search for songs"
+        variant="dark"
+        autoFocus
       />
-      {isSearching && <ActivityIndicator style={{ marginTop: 8 }} />}
-      {results.length > 0 && (
-        <View className="border border-gray-300 rounded mt-1">
-          {results.map((track) => (
-            <Pressable
-              key={track.spotify_uri}
-              onPress={() => handleSelect(track)}
-              className="flex-row items-center gap-2 p-2"
-            >
-              <Image source={{ uri: track.image_url }} style={{ width: 32, height: 32 }} />
-              <View className="flex-1">
-                <Text numberOfLines={1}>{track.name}</Text>
-                <Text numberOfLines={1} variant="bodySmall">
-                  {track.artist}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
+      {isSearching && <ActivityIndicator color={colors.green} style={styles.loading} />}
+      {!isSearching && query.trim() === "" && (
+        <Text style={styles.hint}>Find songs to add to this room.</Text>
       )}
+      <FlatList
+        data={results}
+        keyExtractor={(track) => track.spotify_uri}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => {
+          const added = addedUris.includes(item.spotify_uri);
+          return (
+            <TrackRow
+              track={item}
+              action={{
+                icon: added ? "checkmark-circle" : "add-circle-outline",
+                label: added ? `${item.name} added` : `Add ${item.name}`,
+                active: added,
+              }}
+              onAction={() => !added && onSelectTrack?.(item.spotify_uri)}
+              onPress={() => !added && onSelectTrack?.(item.spotify_uri)}
+            />
+          );
+        }}
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, gap: 12 },
+  loading: { marginTop: 16 },
+  hint: { color: colors.textSubdued, textAlign: "center", marginTop: 32, fontSize: 15 },
+  list: { paddingBottom: 32 },
+});

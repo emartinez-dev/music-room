@@ -1,13 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import { AxiosError } from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
-import { ActivityIndicator, Button, Text } from "react-native-paper";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { PillButton } from "@/components/ui/PillButton";
 import { useAuth } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { Api } from "@/services/api";
 import { resendVerificationApi } from "@/services/auth";
 import { saveTokens } from "@/services/secureStore";
+import { colors } from "@/theme/colors";
 
 // Guards against Android redelivering the link's Intent and remounting with a stale token
 const processedTokens = new Set<string>();
@@ -64,20 +66,40 @@ export default function VerifyEmailScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center gap-2">
-        <ActivityIndicator />
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.green} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 items-center justify-center gap-2">
-      <Text>Open the link from your email to verify your account.</Text>
+    <View style={styles.center}>
+      <Ionicons name="mail-unread-outline" size={72} color={colors.green} />
+      <Text style={styles.title}>Check your inbox</Text>
+      <Text style={styles.text}>Open the link from your email to verify your account.</Text>
       {email ? (
-        <Button mode="text" onPress={handleResend} disabled={isResending}>
-          Resend verification email
-        </Button>
+        <PillButton
+          label="Resend verification email"
+          variant="outline"
+          onPress={handleResend}
+          disabled={isResending}
+          style={styles.button}
+        />
       ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    padding: 32,
+    backgroundColor: colors.background,
+  },
+  title: { color: colors.text, fontSize: 26, fontWeight: "800", textAlign: "center" },
+  text: { color: colors.textSubdued, fontSize: 15, textAlign: "center" },
+  button: { marginTop: 16 },
+});

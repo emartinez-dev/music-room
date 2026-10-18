@@ -1,9 +1,20 @@
 import { router, Stack } from "expo-router";
 import { IconButton } from "react-native-paper";
 
+import { colors } from "@/theme/colors";
+
 export default function TabLayout() {
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        headerTitleStyle: { fontWeight: "700" },
+        headerTitleAlign: "center",
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerTitle: "Create account" }} />
       <Stack.Screen
@@ -13,6 +24,7 @@ export default function TabLayout() {
           headerLeft: () => (
             <IconButton
               icon="arrow-left"
+              iconColor={colors.text}
               onPress={() => (router.canGoBack() ? router.back() : router.replace("/(auth)/login"))}
             />
           ),

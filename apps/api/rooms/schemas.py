@@ -21,6 +21,7 @@ class RoomTrackItem(Schema):
     name: str
     artist: str
     image_url: str
+    duration_ms: int
 
 
 class RoomDetailResponse(Schema):

@@ -21,11 +21,12 @@ describe("Tab layout", () => {
     jest.clearAllMocks();
   });
 
-  it("should declare Home, Rooms and About tabs in that order", async () => {
+  it("should declare Home, Search, Your Library and About tabs in that order", async () => {
     await render(<TabLayout />);
 
     expect(mockedScreen.mock.calls.map(([props]: [{ name: string }]) => props.name)).toEqual([
       "index",
+      "search",
       "rooms",
       "about",
     ]);
@@ -33,6 +34,6 @@ describe("Tab layout", () => {
       mockedScreen.mock.calls.map(
         ([props]: [{ options: { title: string } }]) => props.options.title,
       ),
-    ).toEqual(["Home", "Rooms", "About"]);
+    ).toEqual(["Home", "Search", "Your Library", "About"]);
   });
 });

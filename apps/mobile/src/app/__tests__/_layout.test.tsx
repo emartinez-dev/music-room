@@ -27,6 +27,7 @@ jest.mock("react-native-paper", () => {
   return {
     PaperProvider: ({ children }: { children: React.ReactNode }) =>
       React.createElement(View, null, children),
+    MD3DarkTheme: { colors: { elevation: {} } },
   };
 });
 

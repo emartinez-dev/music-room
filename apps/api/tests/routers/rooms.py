@@ -138,6 +138,7 @@ def test_add_track_to_room(client):
             "name": track.name,
             "artist": track.artist,
             "image_url": track.image_url,
+            "duration_ms": track.duration_ms,
         }
     ]
 

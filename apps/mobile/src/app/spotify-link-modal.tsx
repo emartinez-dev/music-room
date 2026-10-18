@@ -1,9 +1,12 @@
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
-import { View } from "react-native";
-import { Button, IconButton, Text } from "react-native-paper";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { FadeGradient } from "@/components/ui/FadeGradient";
+import { PillButton } from "@/components/ui/PillButton";
 import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/theme/colors";
 
 export default function SpotifyLinkModal() {
   const { linkSpotify, isLoading } = useAuth();
@@ -24,24 +27,40 @@ export default function SpotifyLinkModal() {
   };
 
   return (
-    <View className="flex-1 items-center justify-center gap-4 p-4">
-      <IconButton
-        icon="close"
-        style={{ position: "absolute", top: 8, right: 8 }}
+    <View style={styles.screen}>
+      <FadeGradient color={colors.greenDark} intensity={0.5} height={360} />
+      <Pressable
         onPress={() => router.back()}
-      />
-      <Text variant="titleMedium" style={{ textAlign: "center" }}>
-        Link your Spotify account to vote and edit playlists
-      </Text>
-      <Button
-        mode="contained"
-        icon="spotify"
-        onPress={handleLink}
-        loading={isLoading}
-        disabled={isLoading}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        style={styles.close}
       >
-        Link your Spotify account
-      </Button>
+        <Ionicons name="close" size={28} color={colors.text} />
+      </Pressable>
+      <View style={styles.content}>
+        <MaterialCommunityIcons name="spotify" size={96} color={colors.green} />
+        <Text style={styles.title}>Link your Spotify account to vote and edit playlists</Text>
+        <Text style={styles.subtitle}>
+          You'll be redirected to Spotify to authorize Music Room.
+        </Text>
+        <PillButton
+          label="Link your Spotify account"
+          icon="spotify"
+          onPress={handleLink}
+          loading={isLoading}
+          style={styles.button}
+        />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  close: { position: "absolute", top: 16, right: 16, zIndex: 1 },
+  content: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 32 },
+  title: { color: colors.text, fontSize: 24, fontWeight: "800", textAlign: "center" },
+  subtitle: { color: colors.textSubdued, fontSize: 14, textAlign: "center" },
+  button: { alignSelf: "stretch", marginTop: 16 },
+});
