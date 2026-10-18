@@ -49,7 +49,10 @@ const PlayerProgressContext = createContext<PlayerProgressType>({
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialPlayerState);
-  const [progressMs, setProgressMs] = useState(0);
+  // Progress is tagged with the playId it belongs to: right after a track changes, the previous
+  // track's progress is still in state for one render and must not count as the new one ending
+  const [tracked, setTracked] = useState({ playId: 0, ms: 0 });
+  const progressMs = tracked.ms;
   const progressRef = useRef(0);
   progressRef.current = progressMs;
   const stateRef = useRef(state);
@@ -60,24 +63,31 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const durationMs = current?.duration_ms || DEFAULT_DURATION_MS;
 
   // Every new playId means a track (re)started at `startAt`
-  // biome-ignore lint/correctness/useExhaustiveDependencies: playId is the restart trigger
   useEffect(() => {
-    setProgressMs(startAt);
+    setTracked({ playId, ms: startAt });
     progressRef.current = startAt;
   }, [playId, startAt]);
 
   useEffect(() => {
     if (!isPlaying) return;
-    const id = setInterval(() => setProgressMs((ms) => ms + TICK_MS), TICK_MS);
+    const id = setInterval(
+      () => setTracked((previous) => ({ ...previous, ms: previous.ms + TICK_MS })),
+      TICK_MS,
+    );
     return () => clearInterval(id);
   }, [isPlaying]);
 
   useEffect(() => {
-    if (isPlaying && progressMs >= durationMs && endedPlayId.current !== playId) {
+    if (
+      isPlaying &&
+      tracked.playId === playId &&
+      tracked.ms >= durationMs &&
+      endedPlayId.current !== playId
+    ) {
       endedPlayId.current = playId;
       dispatch({ type: "trackEnded" });
     }
-  }, [isPlaying, progressMs, durationMs, playId]);
+  }, [isPlaying, tracked, durationMs, playId]);
 
   const actions = useMemo(
     () => ({
