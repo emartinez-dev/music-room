@@ -44,7 +44,7 @@ export default function RoomDetailScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { showSnackbar } = useSnackbar();
-  const { current, isPlaying, source, shuffle, play, toggle, toggleShuffle, addToQueue } =
+  const { current, isPlaying, source, shuffle, play, toggle, toggleShuffle, addToQueue, stop } =
     usePlayer();
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [sheetTrack, setSheetTrack] = useState<RoomTrackItem | null>(null);
@@ -74,6 +74,8 @@ export default function RoomDetailScreen() {
     closeOptions();
     try {
       await deleteRoomApi(Number(roomId));
+      // The room is gone, so don't leave its tracks playing
+      if (source?.id === `room:${roomId}`) stop();
       router.back();
     } catch (error) {
       showSnackbar(errorMessage(error, "Failed to delete room"));

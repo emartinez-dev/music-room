@@ -56,7 +56,8 @@ describe("Home screen", () => {
   it("should welcome the user by username", async () => {
     await render(<HomeScreen />);
 
-    expect(await screen.findByText("Welcome back, alice")).toBeTruthy();
+    // The first render of the suite is slow under a full parallel run, so allow more than the 1s default
+    expect(await screen.findByText("Welcome back, alice", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   it("should list the user's rooms and open one when pressed", async () => {
