@@ -17,7 +17,7 @@ google-auth==2.56.3
 hyperlink==21.0.0
 idna==3.16
 Incremental==24.11.0
-msgpack==1.1.2
+msgpack==1.2.3
 packaging==26.2
 psycopg==3.3.4
 psycopg-binary==3.3.4
